@@ -1,0 +1,2 @@
+export const FirebaseFunctionsRateLimiterToken =
+  'FirebaseFunctionsRateLimiterToken';
