@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { configureApp } from '@st-api/core';
@@ -35,10 +35,7 @@ export class StFirebaseApp<
     private readonly appModule: Class<any>,
     private readonly options?: StFirebaseAppOptions,
   ) {
-    this.createQueueHandler = queueHandlerFactory(async () => {
-      const [app] = await this.getApp();
-      return app;
-    });
+    this.createQueueHandler = queueHandlerFactory(() => this.getAppContext());
   }
 
   static create(
@@ -51,7 +48,7 @@ export class StFirebaseApp<
   private readonly createQueueHandler: CreateQueueHandler;
   private readonly queues: T = {} as any;
   private apps: [INestApplication, Express] | undefined;
-  private appsPromise: [Promise<INestApplication>, Express] | undefined;
+  private appContext: INestApplicationContext | undefined;
 
   getHttpHandler(): HttpsFunction {
     return onRequest(
@@ -80,26 +77,29 @@ export class StFirebaseApp<
   }
 
   private async getApp(): Promise<[INestApplication, Express]> {
-    if (this.appsPromise) {
-      const [appPromise, expressApp] = this.appsPromise;
-      return [await appPromise, expressApp];
-    }
     if (this.apps) {
       return this.apps;
     }
     const expressApp = express();
-    const appPromise = NestFactory.create(
-      this.appModule,
-      new ExpressAdapter(expressApp),
-      {
+    const app = configureApp(
+      await NestFactory.create(this.appModule, new ExpressAdapter(expressApp), {
         logger,
+      }),
+      {
+        swagger: {},
       },
     );
-    this.appsPromise = [appPromise, expressApp];
-    const app = configureApp(await appPromise, {
-      swagger: {},
-    });
     await app.init();
     return (this.apps = [app, expressApp]);
+  }
+
+  private async getAppContext(): Promise<INestApplicationContext> {
+    if (this.appContext) {
+      return this.appContext;
+    }
+    const app = await NestFactory.createApplicationContext(this.appModule, {
+      logger,
+    });
+    return (this.appContext = app);
   }
 }
