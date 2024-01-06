@@ -1,6 +1,6 @@
 export { PubSubModule } from './pub-sub/pub-sub.module.js';
 export { PubSub } from './pub-sub/pub-sub.service.js';
-export { type Queue, inject } from './queue/queue-handler.js';
+export { type Queue, queueInject } from './queue/queue-handler.js';
 export { type StFirebaseAppOptions, StFirebaseApp } from './app.js';
 export { FirebaseModule } from './firebase.module.js';
 export { type FirebaseAdminModuleOptions } from './firebase-admin.config.js';

@@ -23,7 +23,7 @@ import { QUEUE_CORRELATION_ID_ATTR_KEY } from './constants.js';
 
 const APP_SYMBOL = Symbol('APP_SYMBOL');
 
-export function inject<T>(type: Class<T>): T {
+export function queueInject<T>(type: Class<T>): T {
   const app = getStateKey(APP_SYMBOL) as INestApplicationContext | undefined;
   if (!app) {
     throw new Error('App is not running on context');
