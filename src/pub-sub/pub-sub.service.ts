@@ -13,7 +13,7 @@ export class PubSub {
     message: Parameters<Topic['publishMessage']>[0],
   ): Promise<void> {
     message.attributes ??= {};
-    message.attributes[QUEUE_CORRELATION_ID_ATTR_KEY] = getCorrelationId();
+    message.attributes[QUEUE_CORRELATION_ID_ATTR_KEY] ??= getCorrelationId();
     await this.googlePubSub.topic(topic).publishMessage(message);
   }
 }

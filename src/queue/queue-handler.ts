@@ -12,6 +12,7 @@ import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
 import {
   MessagePublishedData,
   onMessagePublished,
+  PubSubOptions,
 } from 'firebase-functions/v2/pubsub';
 import { Class } from 'type-fest';
 import { z, ZodSchema } from 'zod';
@@ -53,65 +54,72 @@ export interface CreateQueueHandler {
 
 export function queueHandlerFactory(
   appGetter: () => Promise<INestApplicationContext>,
+  options: Omit<PubSubOptions, 'topic'>,
 ): CreateQueueHandler {
   return <T extends ZodSchema>(queue: Queue<string, T>) => {
     let schema: T | undefined;
-    return onMessagePublished(queue.topic, async (event) => {
-      const app = await appGetter();
-      const [unparsedError] = await safeAsync(async () => {
-        const attributes = event.data.message.attributes;
-        attributes[QUEUE_CORRELATION_ID_ATTR_KEY] ??= createCorrelationId();
-        await apiStateRunInContext(
-          async () => {
-            schema ??= await queue.schema();
-            const json = event.data.message.json;
-            const result = await schema.safeParseAsync(json);
-            if (!result.success) {
-              throw QUEUE_BAD_REQUEST(formatZodErrorString(result.error));
-            }
-            await queue.handle({
-              attributes,
-              data: result.data,
-            });
-          },
-          {
-            [APP_SYMBOL]: app,
-            correlationId: attributes[QUEUE_CORRELATION_ID_ATTR_KEY],
-          },
-        );
-      });
-      if (!unparsedError) {
-        return;
-      }
-      Logger.error(
-        `[${queue.topic}] Queue has an error: ${JSON.stringify({
-          error: unparsedError,
-          errorString: String(unparsedError),
-        })}`,
-      );
-      const [errorFirestore] = await safeAsync(async () => {
-        const error =
-          unparsedError instanceof Exception
-            ? unparsedError
-            : UNKNOWN_INTERNAL_SERVER_ERROR();
-        const firestore = app.get(FirebaseAdminFirestore);
-        await firestore.collection('queue-errors').doc().create({
-          topic: queue.topic,
-          error: error.toJSON(),
-          data: new Date(),
+    return onMessagePublished(
+      {
+        ...options,
+        topic: queue.topic,
+      },
+      async (event) => {
+        const app = await appGetter();
+        const [unparsedError] = await safeAsync(async () => {
+          const attributes = event.data.message.attributes;
+          attributes[QUEUE_CORRELATION_ID_ATTR_KEY] ??= createCorrelationId();
+          await apiStateRunInContext(
+            async () => {
+              schema ??= await queue.schema();
+              const json = event.data.message.json;
+              const result = await schema.safeParseAsync(json);
+              if (!result.success) {
+                throw QUEUE_BAD_REQUEST(formatZodErrorString(result.error));
+              }
+              await queue.handle({
+                attributes,
+                data: result.data,
+              });
+            },
+            {
+              [APP_SYMBOL]: app,
+              correlationId: attributes[QUEUE_CORRELATION_ID_ATTR_KEY],
+            },
+          );
         });
-      });
-      if (!errorFirestore) {
-        return;
-      }
-      Logger.error(
-        `[${
-          queue.topic
-        }] Error trying to register queue error: ${JSON.stringify({
-          error: errorFirestore,
-          errorString: String(errorFirestore),
-        })}`,
-      );
-    });
+        if (!unparsedError) {
+          return;
+        }
+        Logger.error(
+          `[${queue.topic}] Queue has an error: ${JSON.stringify({
+            error: unparsedError,
+            errorString: String(unparsedError),
+          })}`,
+        );
+        const [errorFirestore] = await safeAsync(async () => {
+          const error =
+            unparsedError instanceof Exception
+              ? unparsedError
+              : UNKNOWN_INTERNAL_SERVER_ERROR();
+          const firestore = app.get(FirebaseAdminFirestore);
+          await firestore.collection('queue-errors').doc().create({
+            topic: queue.topic,
+            error: error.toJSON(),
+            data: new Date(),
+          });
+        });
+        if (!errorFirestore) {
+          return;
+        }
+        Logger.error(
+          `[${
+            queue.topic
+          }] Error trying to register queue error: ${JSON.stringify({
+            error: errorFirestore,
+            errorString: String(errorFirestore),
+          })}`,
+        );
+      },
+    );
   };
 }
