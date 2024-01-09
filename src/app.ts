@@ -80,6 +80,8 @@ const TIMEOUT_SECONDS = defineInt('TIMEOUT_SECONDS', {
   },
 });
 
+const TRACE_ID_HEADER = 'X-Cloud-Trace-Context';
+
 export class StFirebaseApp<
   T extends StFirebaseAppRecord = NonNullable<unknown>,
 > {
@@ -150,6 +152,9 @@ export class StFirebaseApp<
       }),
       {
         swagger: {},
+        getTraceId: (request) =>
+          request.get(TRACE_ID_HEADER) ||
+          request.get(TRACE_ID_HEADER.toLowerCase()),
       },
     );
     await app.init();

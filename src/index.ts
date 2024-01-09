@@ -15,3 +15,4 @@ export {
   FirestoreThrottlerDisabled,
   FirestoreThrottlerCollectionNameToken,
 } from './firestore-throttler.js';
+export { Logger } from './logger.js';

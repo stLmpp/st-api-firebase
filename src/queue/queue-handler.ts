@@ -20,7 +20,10 @@ import { z, ZodSchema } from 'zod';
 import { QUEUE_BAD_REQUEST } from '../exceptions.js';
 import { FirebaseAdminFirestore } from '../firebase-admin-firestore.js';
 
-import { QUEUE_CORRELATION_ID_ATTR_KEY } from './constants.js';
+import {
+  QUEUE_CORRELATION_ID_ATTR_KEY,
+  QUEUE_TRACE_ID_ATTR_KEY,
+} from './constants.js';
 
 const APP_SYMBOL = Symbol('APP_SYMBOL');
 
@@ -52,6 +55,12 @@ export interface CreateQueueHandler {
   ): CloudFunction<CloudEvent<MessagePublishedData>>;
 }
 
+function getTraceIdFromEvent(event: CloudEvent<unknown>): string | undefined {
+  if ('traceparent' in event && typeof event.traceparent === 'string') {
+    return event.traceparent.split('-')[1];
+  }
+}
+
 export function queueHandlerFactory(
   appGetter: () => Promise<INestApplicationContext>,
   options: Omit<PubSubOptions, 'topic'>,
@@ -64,10 +73,13 @@ export function queueHandlerFactory(
         topic: queue.topic,
       },
       async (event) => {
+        const eventTraceId = getTraceIdFromEvent(event);
         const app = await appGetter();
         const [unparsedError] = await safeAsync(async () => {
           const attributes = event.data.message.attributes;
           attributes[QUEUE_CORRELATION_ID_ATTR_KEY] ??= createCorrelationId();
+          attributes[QUEUE_TRACE_ID_ATTR_KEY] ??=
+            eventTraceId ?? createCorrelationId();
           await apiStateRunInContext(
             async () => {
               schema ??= await queue.schema();
@@ -84,6 +96,7 @@ export function queueHandlerFactory(
             {
               [APP_SYMBOL]: app,
               correlationId: attributes[QUEUE_CORRELATION_ID_ATTR_KEY],
+              traceId: attributes[QUEUE_TRACE_ID_ATTR_KEY],
             },
           );
         });
