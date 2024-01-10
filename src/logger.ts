@@ -131,9 +131,6 @@ export class Logger {
     args: unknown[],
   ): void {
     if (process.env.NODE_ENV !== NodeEnvEnum.Production) {
-      if (scope) {
-        args.unshift(scope);
-      }
       const method = fromSeverityToConsoleLog[severity];
       const { entry, message } = getEntryAndMessage(args);
       const object = removeCircular({
