@@ -128,7 +128,7 @@ export class Logger {
   static write(
     severity: LogSeverity,
     scope: string | undefined,
-    ...args: unknown[]
+    args: unknown[],
   ): void {
     if (process.env.NODE_ENV === NodeEnvEnum.Development) {
       if (scope) {
