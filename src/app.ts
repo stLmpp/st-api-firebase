@@ -4,7 +4,7 @@ import { ExpressAdapter } from '@nestjs/platform-express';
 import { configureApp } from '@st-api/core';
 import express, { Express } from 'express';
 import { defineInt } from 'firebase-functions/params';
-import { CloudEvent, CloudFunction, logger } from 'firebase-functions/v2';
+import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
 import {
   HttpsFunction,
   HttpsOptions,
@@ -14,6 +14,7 @@ import { MessagePublishedData } from 'firebase-functions/v2/pubsub';
 import { Class } from 'type-fest';
 import { ZodSchema } from 'zod';
 
+import { Logger } from './logger.js';
 import {
   CreateQueueHandler,
   Queue,
@@ -106,6 +107,7 @@ export class StFirebaseApp<
     return new StFirebaseApp(appModule, options);
   }
 
+  private readonly logger = Logger.create(this);
   private readonly createQueueHandler: CreateQueueHandler;
   private readonly queues: T = {} as any;
   private apps: [INestApplication, Express] | undefined;
@@ -148,7 +150,7 @@ export class StFirebaseApp<
     const expressApp = express();
     const app = configureApp(
       await NestFactory.create(this.appModule, new ExpressAdapter(expressApp), {
-        logger,
+        logger: this.logger,
       }),
       {
         swagger: {},
@@ -166,7 +168,7 @@ export class StFirebaseApp<
       return this.appContext;
     }
     const app = await NestFactory.createApplicationContext(this.appModule, {
-      logger,
+      logger: this.logger,
     });
     return (this.appContext = app);
   }
