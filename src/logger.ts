@@ -130,7 +130,7 @@ export class Logger {
     scope: string | undefined,
     args: unknown[],
   ): void {
-    if (process.env.NODE_ENV === NodeEnvEnum.Development) {
+    if (process.env.NODE_ENV !== NodeEnvEnum.Production) {
       if (scope) {
         args.unshift(scope);
       }
