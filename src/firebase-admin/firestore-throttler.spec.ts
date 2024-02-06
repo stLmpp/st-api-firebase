@@ -4,7 +4,6 @@ import { TOO_MANY_REQUESTS } from '@st-api/core';
 import { FirebaseFunctionsRateLimiter } from 'firebase-functions-rate-limiter';
 import { mock } from 'vitest-mock-extended';
 
-
 import { FirebaseAdminFirestore } from './firebase-admin-firestore.js';
 import { FirebaseFunctionsRateLimiterToken } from './firebase-functions-rate-limiter.token.js';
 import {

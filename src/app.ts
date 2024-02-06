@@ -10,21 +10,22 @@ import {
   HttpsOptions,
   onRequest,
 } from 'firebase-functions/v2/https';
-import { MessagePublishedData } from 'firebase-functions/v2/pubsub';
 import { Class } from 'type-fest';
 import { ZodSchema } from 'zod';
 
+import {
+  EventarcHandlerFactoryOptions,
+  EventarcHandlerOptions,
+  EventarcHandlerFactory,
+} from './eventarc/eventarc-handler.factory.js';
 import { Logger } from './logger.js';
 import {
-  CreateQueueHandler,
-  Queue,
-  queueHandlerFactory,
-} from './queue/queue-handler.js';
+  PubSubHandlerFactory,
+  PubSubHandlerFactoryOptions,
+  PubSubHandlerOptions,
+} from './pub-sub/pub-sub-handler.factory.js';
 
-type StFirebaseAppRecord = Record<
-  string,
-  CloudFunction<CloudEvent<MessagePublishedData>>
->;
+type StFirebaseAppRecord = Record<string, CloudFunction<CloudEvent<unknown>>>;
 
 export interface StFirebaseAppOptions {
   secrets?: HttpsOptions['secrets'];
@@ -90,14 +91,23 @@ export class StFirebaseApp<
     private readonly appModule: Class<any>,
     private readonly options?: StFirebaseAppOptions,
   ) {
-    this.createQueueHandler = queueHandlerFactory(() => this.getAppContext(), {
-      memory: MEMORY,
-      minInstances: 0,
-      timeoutSeconds: TIMEOUT_SECONDS,
+    const commonOptions:
+      | EventarcHandlerFactoryOptions
+      | PubSubHandlerFactoryOptions = {
       secrets: options?.secrets ?? [],
       maxInstances: MAX_INSTANCES,
       retry: false,
-    });
+      memory: MEMORY,
+      minInstances: 0,
+      timeoutSeconds: TIMEOUT_SECONDS,
+    };
+    this.eventarcHandlerFactory = new EventarcHandlerFactory(
+      commonOptions,
+      () => this.getAppContext(),
+    );
+    this.pubSubHandlerFactory = new PubSubHandlerFactory(commonOptions, () =>
+      this.getAppContext(),
+    );
   }
 
   static create(
@@ -108,8 +118,9 @@ export class StFirebaseApp<
   }
 
   private readonly logger = Logger.create(this);
-  private readonly createQueueHandler: CreateQueueHandler;
-  private readonly queues: T = {} as any;
+  private readonly eventarcHandlerFactory: EventarcHandlerFactory;
+  private readonly pubSubHandlerFactory: PubSubHandlerFactory;
+  private readonly cloudEvents: StFirebaseAppRecord = {};
   private apps: [INestApplication, Express] | undefined;
   private appContext: INestApplicationContext | undefined;
 
@@ -129,17 +140,24 @@ export class StFirebaseApp<
     );
   }
 
-  getQueueHandlers(): T {
-    return this.queues;
+  getCloudEventHandlers(): T {
+    return this.cloudEvents as T;
   }
 
-  addQueue<Topic extends string, Schema extends ZodSchema>(
-    queue: Queue<Topic, Schema>,
+  addPubSub<Topic extends string, Schema extends ZodSchema>(
+    options: PubSubHandlerOptions<Topic, Schema>,
+  ): StFirebaseApp<T & { [K in Topic]: CloudFunction<CloudEvent<unknown>> }> {
+    this.cloudEvents[options.topic] = this.pubSubHandlerFactory.create(options);
+    return this;
+  }
+
+  addEventarc<EventType extends string, Schema extends ZodSchema>(
+    event: EventarcHandlerOptions<EventType, Schema>,
   ): StFirebaseApp<
-    T & { [K in Topic]: CloudFunction<CloudEvent<MessagePublishedData>> }
+    T & { [K in EventType]: CloudFunction<CloudEvent<unknown>> }
   > {
-    (this.queues as StFirebaseAppRecord)[queue.topic] =
-      this.createQueueHandler(queue);
+    this.cloudEvents[event.eventType] =
+      this.eventarcHandlerFactory.create(event);
     return this;
   }
 

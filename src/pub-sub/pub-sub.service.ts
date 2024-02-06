@@ -1,8 +1,8 @@
 import { PubSub as GooglePubSub, type Topic } from '@google-cloud/pubsub';
 import { Injectable } from '@nestjs/common';
-import { getCorrelationId } from '@st-api/core';
+import { getCorrelationId, getTraceId } from '@st-api/core';
 
-import { QUEUE_CORRELATION_ID_ATTR_KEY } from '../queue/constants.js';
+import { CORRELATION_ID_KEY, TRACE_ID_KEY } from '../common/constants.js';
 
 @Injectable()
 export class PubSub {
@@ -13,7 +13,8 @@ export class PubSub {
     message: Parameters<Topic['publishMessage']>[0],
   ): Promise<void> {
     message.attributes ??= {};
-    message.attributes[QUEUE_CORRELATION_ID_ATTR_KEY] ??= getCorrelationId();
+    message.attributes[CORRELATION_ID_KEY] ??= getCorrelationId();
+    message.attributes[TRACE_ID_KEY] ??= getTraceId();
     await this.googlePubSub.topic(topic).publishMessage(message);
   }
 }

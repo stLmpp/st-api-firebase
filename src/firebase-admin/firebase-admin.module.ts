@@ -8,11 +8,13 @@ import {
 } from '@st-api/core';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getEventarc } from 'firebase-admin/eventarc';
 import { getFirestore } from 'firebase-admin/firestore';
 import { FirebaseFunctionsRateLimiter } from 'firebase-functions-rate-limiter/dist/FirebaseFunctionsRateLimiter.js';
 
 import { FirebaseAdminApp } from './firebase-admin-app.js';
 import { FirebaseAdminAuth } from './firebase-admin-auth.js';
+import { FirebaseAdminEventarc } from './firebase-admin-eventarc.js';
 import { FirebaseAdminFirestore } from './firebase-admin-firestore.js';
 import {
   FirebaseAdminAsyncOptionsType,
@@ -78,6 +80,11 @@ import {
         }
         return firestore;
       },
+      inject: [FirebaseAdminApp],
+    },
+    {
+      provide: FirebaseAdminEventarc,
+      useFactory: (app: FirebaseAdminApp) => getEventarc(app),
       inject: [FirebaseAdminApp],
     },
     {
