@@ -1,6 +1,6 @@
 {
   "name": "@st-api/firebase",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "",
   "homepage": "https://github.com/stLmpp/st-api-firebase#readme",
   "bugs": {
@@ -44,7 +44,7 @@
     "@nestjs/core": "~10.3.1",
     "@nestjs/platform-express": "~10.3.1",
     "@nestjs/throttler": "~5.1.1",
-    "@st-api/core": "~4.0.0",
+    "@st-api/core": "~4.0.1",
     "express": "~4.18.2",
     "firebase": "~10.8.0",
     "firebase-admin": "~12.0.0",

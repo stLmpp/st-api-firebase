@@ -30,8 +30,8 @@ dependencies:
     specifier: ~5.1.1
     version: 5.1.1(@nestjs/common@10.3.1)(@nestjs/core@10.3.1)(reflect-metadata@0.1.13)
   '@st-api/core':
-    specifier: ~4.0.0
-    version: 4.0.0
+    specifier: ~4.0.1
+    version: 4.0.1
   express:
     specifier: ~4.18.2
     version: 4.18.2
@@ -2103,8 +2103,8 @@ packages:
       - typescript
     dev: true
 
-  /@st-api/core@4.0.0:
-    resolution: {integrity: sha512-KovDudZ0vdxxo1FSlOg2vtJ/Im57dKhmFr423rr30ybpqQPc8SDZngtqtk0FebhitHtNpMBKlqp70YXBdGbPIQ==}
+  /@st-api/core@4.0.1:
+    resolution: {integrity: sha512-1lK5h31F1+PQR3wRheRy4MHAm5uzPU1n0d3vt60g8Z+xjdsoYO3sFc4S3Ye5huTMFQNAZNy6rNvcGE7sOBjdLA==}
     dependencies:
       '@anatine/zod-openapi': 2.2.3(openapi3-ts@4.2.1)(zod@3.22.4)
       '@nestjs/common': 10.3.1(reflect-metadata@0.1.13)(rxjs@7.8.1)
