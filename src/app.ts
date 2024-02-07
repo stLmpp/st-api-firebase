@@ -14,9 +14,9 @@ import { Class } from 'type-fest';
 import { ZodSchema } from 'zod';
 
 import {
+  EventarcHandlerFactory,
   EventarcHandlerFactoryOptions,
   EventarcHandlerOptions,
-  EventarcHandlerFactory,
 } from './eventarc/eventarc-handler.factory.js';
 import { Logger } from './logger.js';
 import {
@@ -84,9 +84,7 @@ const TIMEOUT_SECONDS = defineInt('TIMEOUT_SECONDS', {
 
 const TRACE_ID_HEADER = 'X-Cloud-Trace-Context';
 
-export class StFirebaseApp<
-  T extends StFirebaseAppRecord = NonNullable<unknown>,
-> {
+export class StFirebaseApp {
   private constructor(
     private readonly appModule: Class<any>,
     private readonly options?: StFirebaseAppOptions,
@@ -123,6 +121,8 @@ export class StFirebaseApp<
   private readonly cloudEvents: StFirebaseAppRecord = {};
   private apps: [INestApplication, Express] | undefined;
   private appContext: INestApplicationContext | undefined;
+  private eventNumber = 1;
+  private pubSubNumber = 1;
 
   getHttpHandler(): HttpsFunction {
     return onRequest(
@@ -140,24 +140,23 @@ export class StFirebaseApp<
     );
   }
 
-  getCloudEventHandlers(): T {
-    return this.cloudEvents as T;
+  getCloudEventHandlers(): StFirebaseAppRecord {
+    return this.cloudEvents;
   }
 
   addPubSub<Topic extends string, Schema extends ZodSchema>(
     options: PubSubHandlerOptions<Topic, Schema>,
-  ): StFirebaseApp<T & { [K in Topic]: CloudFunction<CloudEvent<unknown>> }> {
-    this.cloudEvents[options.topic] = this.pubSubHandlerFactory.create(options);
+  ): this {
+    const key = `pubSub${this.pubSubNumber++}`;
+    this.cloudEvents[key] = this.pubSubHandlerFactory.create(options);
     return this;
   }
 
   addEventarc<EventType extends string, Schema extends ZodSchema>(
     event: EventarcHandlerOptions<EventType, Schema>,
-  ): StFirebaseApp<
-    T & { [K in EventType]: CloudFunction<CloudEvent<unknown>> }
-  > {
-    this.cloudEvents[event.eventType] =
-      this.eventarcHandlerFactory.create(event);
+  ): this {
+    const key = `eventarc${this.eventNumber++}`;
+    this.cloudEvents[key] = this.eventarcHandlerFactory.create(event);
     return this;
   }
 

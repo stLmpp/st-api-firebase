@@ -5,12 +5,6 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
-  '@google-cloud/eventarc':
-    specifier: ^3.0.1
-    version: 3.0.1
-  '@google-cloud/eventarc-publishing':
-    specifier: ^3.0.1
-    version: 3.0.1
   '@google-cloud/logging':
     specifier: ~11.0.0
     version: 11.0.0
@@ -1224,26 +1218,6 @@ packages:
       google-auth-library: 9.4.1
       retry-request: 7.0.1
       teeny-request: 9.0.0
-    transitivePeerDependencies:
-      - encoding
-      - supports-color
-    dev: false
-
-  /@google-cloud/eventarc-publishing@3.0.1:
-    resolution: {integrity: sha512-nQFOOGgOM4Ms6gulQTV4XDFmYJLnpsJiExav88cjf0mrNe91EB27UFZL/Y+387og6Q+nEHqG28LRPI/3oAGPlA==}
-    engines: {node: '>=14.0.0'}
-    dependencies:
-      google-gax: 4.0.5
-    transitivePeerDependencies:
-      - encoding
-      - supports-color
-    dev: false
-
-  /@google-cloud/eventarc@3.0.1:
-    resolution: {integrity: sha512-eMiZYGphwpl79Op2YUdjci5goM/WRkpn/CgolMett/fFOqND5ulgtSOikFDK1RTkbAQcjn1mLbfp7oU/ksNF5A==}
-    engines: {node: '>=14.0.0'}
-    dependencies:
-      google-gax: 4.0.5
     transitivePeerDependencies:
       - encoding
       - supports-color

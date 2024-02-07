@@ -1,6 +1,6 @@
 {
   "name": "@st-api/firebase",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "",
   "homepage": "https://github.com/stLmpp/st-api-firebase#readme",
   "bugs": {
@@ -36,8 +36,6 @@
     "test:watch": "vitest -w"
   },
   "dependencies": {
-    "@google-cloud/eventarc": "^3.0.1",
-    "@google-cloud/eventarc-publishing": "^3.0.1",
     "@google-cloud/logging": "~11.0.0",
     "@google-cloud/pubsub": "~4.3.0",
     "@nestjs/common": "~10.3.1",
