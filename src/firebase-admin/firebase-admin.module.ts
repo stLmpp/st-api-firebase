@@ -12,6 +12,8 @@ import { getEventarc } from 'firebase-admin/eventarc';
 import { getFirestore } from 'firebase-admin/firestore';
 import { FirebaseFunctionsRateLimiter } from 'firebase-functions-rate-limiter/dist/FirebaseFunctionsRateLimiter.js';
 
+import { Eventarc } from '../eventarc/eventarc.service.js';
+
 import { FirebaseAdminApp } from './firebase-admin-app.js';
 import { FirebaseAdminAuth } from './firebase-admin-auth.js';
 import { FirebaseAdminEventarc } from './firebase-admin-eventarc.js';
@@ -31,7 +33,13 @@ import {
 } from './firestore-throttler.js';
 
 @Module({
-  exports: [FirebaseAdminApp, FirebaseAdminFirestore, FirebaseAdminAuth],
+  exports: [
+    FirebaseAdminApp,
+    FirebaseAdminFirestore,
+    FirebaseAdminAuth,
+    FirebaseAdminEventarc,
+    Eventarc,
+  ],
   providers: [
     {
       provide: ThrottlerOptionsToken,
@@ -91,6 +99,7 @@ import {
       provide: FirebaseFunctionsRateLimiterToken,
       useValue: FirebaseFunctionsRateLimiter,
     },
+    Eventarc,
   ],
 })
 export class FirebaseAdminModule extends FirebaseAdminBaseClass {
