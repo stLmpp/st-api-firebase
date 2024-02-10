@@ -22,10 +22,11 @@ export interface HandleCloudEventErrorOptions {
   data: unknown;
 }
 
-export type HandleCloudEventQueueErrorOptions = HandleCloudEventErrorOptions & {
-  type: CloudEventErrorType.PubSub;
-  topic: string;
-};
+export type HandleCloudEventPubSubErrorOptions =
+  HandleCloudEventErrorOptions & {
+    type: CloudEventErrorType.PubSub;
+    topic: string;
+  };
 
 export type HandleCloudEventEventarcErrorOptions =
   HandleCloudEventErrorOptions & {
@@ -35,15 +36,15 @@ export type HandleCloudEventEventarcErrorOptions =
 
 function getContext(
   options:
-    | HandleCloudEventQueueErrorOptions
+    | HandleCloudEventPubSubErrorOptions
     | HandleCloudEventEventarcErrorOptions,
 ): string {
   switch (options.type) {
     case CloudEventErrorType.PubSub: {
-      return `Queue - ${options.topic}`;
+      return `PubSub - ${options.topic}`;
     }
     case CloudEventErrorType.Eventarc: {
-      return `Event - ${options.eventType}`;
+      return `Eventarc - ${options.eventType}`;
     }
     default: {
       return 'Unknown';
@@ -53,7 +54,7 @@ function getContext(
 
 export async function handleCloudEventError(
   options:
-    | HandleCloudEventQueueErrorOptions
+    | HandleCloudEventPubSubErrorOptions
     | HandleCloudEventEventarcErrorOptions,
 ): Promise<void> {
   const context = getContext(options);

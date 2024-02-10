@@ -10,6 +10,7 @@ import {
   EventarcTriggerOptions,
   onCustomEventPublished,
 } from 'firebase-functions/v2/eventarc';
+import { Class } from 'type-fest';
 import { ZodSchema } from 'zod';
 
 import { getTraceIdFromEvent } from '../common/get-trace-id-from-event.js';
@@ -18,9 +19,24 @@ import {
   handleCloudEventError,
 } from '../common/handle-cloud-event-error.js';
 import { APP_SYMBOL } from '../common/inject.js';
-import { EVENT_BAD_FORMAT, EVENT_BAD_REQUEST } from '../exceptions.js';
+import {
+  EVENTARC_BAD_FORMAT,
+  EVENTARC_BAD_REQUEST,
+  EVENTARC_INVALID_HANDLER,
+} from '../exceptions.js';
+import { Logger } from '../logger.js';
 
 import { EventarcData } from './eventarc-data.schema.js';
+
+export type EventarcHandle<Schema extends ZodSchema> = (
+  event: Schema,
+) => Promise<void> | void;
+export interface EventarcHandler<Schema extends ZodSchema> {
+  handle: EventarcHandle<Schema>;
+}
+export type EventarcHandlers<Schema extends ZodSchema> =
+  | { handle: EventarcHandle<Schema> }
+  | { handler: Class<EventarcHandler<Schema>> };
 
 export type EventarcHandlerOptions<
   EventType extends string,
@@ -28,8 +44,8 @@ export type EventarcHandlerOptions<
 > = {
   eventType: EventType;
   schema: () => Promise<Schema> | Schema;
-  handle: (event: Schema) => Promise<void> | void;
-} & Pick<EventarcTriggerOptions, 'eventFilters' | 'eventFilterPathPatterns'>;
+} & Pick<EventarcTriggerOptions, 'eventFilters' | 'eventFilterPathPatterns'> &
+  EventarcHandlers<Schema>;
 
 export type EventarcHandlerFactoryOptions = Omit<
   EventarcTriggerOptions,
@@ -46,6 +62,7 @@ export class EventarcHandlerFactory {
     eventOptions: EventarcHandlerOptions<EventType, Schema>,
   ): CloudFunction<CloudEvent<unknown>> {
     let schema: Schema | undefined;
+    let handle: EventarcHandle<Schema> | undefined;
     return onCustomEventPublished(
       {
         eventType: eventOptions.eventType,
@@ -58,7 +75,9 @@ export class EventarcHandlerFactory {
         const [unparsedError] = await safeAsync(async () => {
           const eventDataResult = EventarcData.safeParse(event.data);
           if (!eventDataResult.success) {
-            throw EVENT_BAD_FORMAT(formatZodErrorString(eventDataResult.error));
+            throw EVENTARC_BAD_FORMAT(
+              formatZodErrorString(eventDataResult.error),
+            );
           }
           const correlationId =
             eventDataResult.data.correlationId ?? createCorrelationId();
@@ -69,12 +88,13 @@ export class EventarcHandlerFactory {
           await apiStateRunInContext(
             async () => {
               schema ??= await eventOptions.schema();
+              handle ??= await this.getHandle(eventOptions, app);
               const json = eventDataResult.data;
               const result = await schema.safeParseAsync(json);
               if (!result.success) {
-                throw EVENT_BAD_REQUEST(formatZodErrorString(result.error));
+                throw EVENTARC_BAD_REQUEST(formatZodErrorString(result.error));
               }
-              await eventOptions.handle(result.data);
+              await handle(result.data);
             },
             {
               [APP_SYMBOL]: app,
@@ -86,6 +106,7 @@ export class EventarcHandlerFactory {
         if (!unparsedError) {
           return;
         }
+        // TODO allow retry in some cases
         await handleCloudEventError({
           type: CloudEventErrorType.Eventarc,
           error: unparsedError,
@@ -96,4 +117,34 @@ export class EventarcHandlerFactory {
       },
     );
   }
+
+  private async getHandle<Schema extends ZodSchema, EventType extends string>(
+    options: EventarcHandlerOptions<EventType, Schema>,
+    app: INestApplicationContext,
+  ): Promise<EventarcHandle<Schema>> {
+    if ('handle' in options) {
+      return options.handle;
+    }
+    const [error, handler] = await safeAsync(() =>
+      app.resolve(options.handler),
+    );
+    if (error) {
+      Logger.error(
+        `[Eventarc] Could not find instance of ${options.handler.name}, ` +
+          `make sure it is registered in the module providers`,
+        error,
+      );
+      throw EVENTARC_INVALID_HANDLER(error.message);
+    }
+    return (...args) => handler.handle(...args);
+  }
+}
+
+export function createEventarcHandler<
+  EventType extends string,
+  Schema extends ZodSchema,
+>(
+  options: EventarcHandlerOptions<EventType, Schema>,
+): EventarcHandlerOptions<EventType, Schema> {
+  return options;
 }
