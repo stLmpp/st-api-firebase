@@ -12,6 +12,8 @@ import { getEventarc } from 'firebase-admin/eventarc';
 import { getFirestore } from 'firebase-admin/firestore';
 import { FirebaseFunctionsRateLimiter } from 'firebase-functions-rate-limiter/dist/FirebaseFunctionsRateLimiter.js';
 
+import { isEmulator } from '../common/is-emulator.js';
+import { EventarcController } from '../eventarc/eventarc.controller.js';
 import { Eventarc } from '../eventarc/eventarc.service.js';
 
 import { FirebaseAdminApp } from './firebase-admin-app.js';
@@ -31,8 +33,6 @@ import {
   FirestoreThrottlerCollectionNameToken,
   FirestoreThrottlerDisabled,
 } from './firestore-throttler.js';
-import { isEmulator } from '../common/is-emulator.js';
-import { EventarcController } from '../eventarc/eventarc.controller.js';
 
 const controllers: Type[] = [];
 
@@ -109,6 +109,7 @@ if (isEmulator()) {
     },
     Eventarc,
   ],
+  controllers,
 })
 export class FirebaseAdminModule extends FirebaseAdminBaseClass {
   static forRoot(options: FirebaseAdminOptionsType = {}): DynamicModule {
