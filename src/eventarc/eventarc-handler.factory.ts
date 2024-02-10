@@ -89,7 +89,7 @@ export class EventarcHandlerFactory {
             async () => {
               schema ??= await eventOptions.schema();
               handle ??= await this.getHandle(eventOptions, app);
-              const json = eventDataResult.data;
+              const json = eventDataResult.data.body;
               const result = await schema.safeParseAsync(json);
               if (!result.success) {
                 throw EVENTARC_BAD_REQUEST(formatZodErrorString(result.error));
