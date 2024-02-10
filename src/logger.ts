@@ -1,9 +1,11 @@
 import { format } from 'node:util';
 
-import { getCorrelationId, getTraceId, NodeEnvEnum, safe } from '@st-api/core';
+import { getCorrelationId, getTraceId, safe } from '@st-api/core';
 import { LogEntry, LogSeverity } from 'firebase-functions/logger';
 import { logger } from 'firebase-functions/v2';
 import { ConditionalKeys } from 'type-fest';
+
+import { isEmulator } from './common/is-emulator.js';
 
 interface EntryFromArgs {
   severity: LogSeverity;
@@ -130,7 +132,7 @@ export class Logger {
     scope: string | undefined,
     args: unknown[],
   ): void {
-    if (process.env.NODE_ENV !== NodeEnvEnum.Production) {
+    if (isEmulator()) {
       const method = fromSeverityToConsoleLog[severity];
       const { entry, message } = getEntryAndMessage(args);
       const object = removeCircular({

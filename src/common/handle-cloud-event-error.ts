@@ -19,6 +19,7 @@ export interface HandleCloudEventErrorOptions {
   error: Error;
   app: INestApplicationContext;
   type: CloudEventErrorType;
+  data: unknown;
 }
 
 export type HandleCloudEventQueueErrorOptions = HandleCloudEventErrorOptions & {
@@ -56,7 +57,7 @@ export async function handleCloudEventError(
     | HandleCloudEventEventarcErrorOptions,
 ): Promise<void> {
   const context = getContext(options);
-  const { error: unparsedError, app, type, ...optionsRest } = options;
+  const { error: unparsedError, app, ...optionsRest } = options;
   Logger.error(
     `[${context}] Has an error: ${JSON.stringify({
       error: unparsedError,
@@ -79,7 +80,6 @@ export async function handleCloudEventError(
         correlationId,
         error: error.toJSON(),
         date: new Date(),
-        type,
         ...optionsRest,
       });
   });

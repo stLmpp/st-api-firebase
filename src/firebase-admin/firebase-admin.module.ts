@@ -1,4 +1,4 @@
-import { DynamicModule, Logger, Module } from '@nestjs/common';
+import { DynamicModule, Logger, Module, Type } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import {
   Throttler,
@@ -31,6 +31,14 @@ import {
   FirestoreThrottlerCollectionNameToken,
   FirestoreThrottlerDisabled,
 } from './firestore-throttler.js';
+import { isEmulator } from '../common/is-emulator.js';
+import { EventarcController } from '../eventarc/eventarc.controller.js';
+
+const controllers: Type[] = [];
+
+if (isEmulator()) {
+  controllers.push(EventarcController);
+}
 
 @Module({
   exports: [

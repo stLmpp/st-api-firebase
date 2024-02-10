@@ -170,7 +170,29 @@ export class StFirebaseApp {
         logger: this.logger,
       }),
       {
-        swagger: {},
+        swagger: {
+          options: {
+            swaggerOptions: {
+              requestInterceptor: (request: unknown) =>
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-expect-error
+                __request__interceptor(request),
+            },
+            customJsStr: `
+window.__request__interceptor = (request) => {
+  const url = new URL(request.url);
+  const endPoint = url.pathname;
+  const origin = location.origin;
+  const path = location.pathname.replace(/\\/help$/, '');
+  const newUrl = origin + path + endPoint
+  if (url.searchParams.size) {
+    newUrl += '?' + url.searchParams.toString();
+  }
+  request.url = newUrl;
+  return request;
+}`,
+          },
+        },
         getTraceId: (request) =>
           request.get(TRACE_ID_HEADER) ||
           request.get(TRACE_ID_HEADER.toLowerCase()),

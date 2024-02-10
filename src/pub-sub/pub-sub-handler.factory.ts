@@ -87,6 +87,10 @@ export class PubSubHandlerFactory {
           error: unparsedError,
           type: CloudEventErrorType.PubSub,
           topic: options.topic,
+          data: {
+            attributes: event.data.message.attributes,
+            json: event.data.message.json,
+          },
         });
       },
     );

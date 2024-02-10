@@ -91,6 +91,7 @@ export class EventarcHandlerFactory {
           error: unparsedError,
           app,
           eventType: eventOptions.eventType,
+          data: event.data,
         });
       },
     );
