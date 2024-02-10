@@ -11,7 +11,7 @@ import {
   onCustomEventPublished,
 } from 'firebase-functions/v2/eventarc';
 import { Class } from 'type-fest';
-import { ZodSchema } from 'zod';
+import { z, ZodSchema } from 'zod';
 
 import { getTraceIdFromEvent } from '../common/get-trace-id-from-event.js';
 import {
@@ -29,7 +29,7 @@ import { Logger } from '../logger.js';
 import { EventarcData } from './eventarc-data.schema.js';
 
 export type EventarcHandle<Schema extends ZodSchema> = (
-  event: Schema,
+  event: z.infer<Schema>,
 ) => Promise<void> | void;
 export interface EventarcHandler<Schema extends ZodSchema> {
   handle: EventarcHandle<Schema>;
