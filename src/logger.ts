@@ -6,6 +6,7 @@ import { logger } from 'firebase-functions/v2';
 import { ConditionalKeys } from 'type-fest';
 
 import { isEmulator } from './common/is-emulator.js';
+import { removeCircular } from './common/remove-circular.js';
 
 interface EntryFromArgs {
   severity: LogSeverity;
@@ -20,15 +21,13 @@ interface EntryFromArgs {
  * @param severity
  */
 function entryFromArgs({ args, scope, severity }: EntryFromArgs): LogEntry {
-  let { entry, message } = getEntryAndMessage(args);
+  let { entry, message, traceId, correlationId } = getEntryAndMessage(args);
   if (
     severity === 'ERROR' &&
     !args.some((argument) => argument instanceof Error)
   ) {
     message = new Error(message).stack || message;
   }
-  const [, traceId] = safe(() => getTraceId());
-  const [, correlationId] = safe(() => getCorrelationId());
   const out: LogEntry = {
     'logging.googleapis.com/trace': traceId
       ? `projects/${process.env.GCLOUD_PROJECT}/traces/${traceId}`
@@ -59,31 +58,9 @@ function getEntryAndMessage(args: unknown[]) {
     entry = lastArgument;
   }
   const message = format(...args);
-  return { entry, message };
-}
-
-function removeCircular(object: any, references: any[] = []): any {
-  if (typeof object !== 'object' || !object) {
-    return object;
-  }
-  // If the object defines its own toJSON, prefer that.
-  if ('toJSON' in object && typeof object.toJSON === 'function') {
-    return object.toJSON();
-  }
-  if (references.includes(object)) {
-    return '[Circular]';
-  } else {
-    references.push(object);
-  }
-  const returnObject: any = Array.isArray(object)
-    ? Array.from({ length: object.length })
-    : {};
-  for (const k in object) {
-    returnObject[k] = references.includes(object[k])
-      ? '[Circular]'
-      : removeCircular(object[k], references);
-  }
-  return returnObject;
+  const [, traceId] = safe(() => getTraceId());
+  const [, correlationId] = safe(() => getCorrelationId());
+  return { entry, message, traceId, correlationId };
 }
 
 const fromSeverityToConsoleLog: Record<
@@ -134,12 +111,15 @@ export class Logger {
   ): void {
     if (isEmulator()) {
       const method = fromSeverityToConsoleLog[severity];
-      const { entry, message } = getEntryAndMessage(args);
+      const { entry, message, correlationId, traceId } =
+        getEntryAndMessage(args);
       const object = removeCircular({
         ...entry,
         message,
         metadata: {
           scope,
+          traceId,
+          correlationId,
         },
       });
       return console[method](

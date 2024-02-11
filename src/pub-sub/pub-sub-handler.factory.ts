@@ -7,6 +7,7 @@ import {
 } from '@st-api/core';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
 import {
+  MessagePublishedData,
   onMessagePublished,
   PubSubOptions,
 } from 'firebase-functions/v2/pubsub';
@@ -30,9 +31,9 @@ export interface PubSubEventData<Schema extends ZodSchema> {
   attributes: Record<string, string>;
 }
 
-export type PubSubHandle<Schema extends ZodSchema> = (
+export type PubSubHandle<Schema extends ZodSchema = ZodSchema> = (
   event: PubSubEventData<Schema>,
-) => Promise<void> | void;
+) => Promise<void>;
 
 export interface PubSubHandler<Schema extends ZodSchema> {
   handle: PubSubHandle<Schema>;
@@ -50,6 +51,17 @@ export type PubSubHandlerOptions<
   schema: () => Promise<Schema> | Schema;
 } & PubSubHandlers<Schema>;
 
+interface HandleCloudEventOptions<
+  Topic extends string = string,
+  Schema extends ZodSchema = ZodSchema,
+> {
+  event: CloudEvent<MessagePublishedData>;
+  options: PubSubHandlerOptions<Topic, Schema>;
+  app: INestApplicationContext;
+  getHandle(): Promise<PubSubHandle<Schema>>;
+  getSchema(): Promise<Schema>;
+}
+
 export class PubSubHandlerFactory {
   constructor(
     private readonly options: PubSubHandlerFactoryOptions,
@@ -61,38 +73,55 @@ export class PubSubHandlerFactory {
   ): CloudFunction<CloudEvent<unknown>> {
     let schema: Schema | undefined;
     let handle: PubSubHandle<Schema>;
+    const getSchema = async () => (schema ??= await options.schema());
     return onMessagePublished(
       {
         ...this.options,
         topic: options.topic,
       },
       async (event) => {
-        const eventTraceId = getTraceIdFromEvent(event);
         const app = await this.getApp();
+        const getHandle = async () =>
+          (handle ??= await this.getHandle(options, app));
+        await this.handleCloudEvent({
+          event,
+          app,
+          getSchema,
+          options,
+          getHandle,
+        });
+      },
+    );
+  }
+
+  private async handleCloudEvent<
+    Topic extends string,
+    Schema extends ZodSchema,
+  >({
+    options,
+    event,
+    getHandle,
+    getSchema,
+    app,
+  }: HandleCloudEventOptions<Topic, Schema>) {
+    const eventTraceId = getTraceIdFromEvent(event);
+    const attributes = event.data.message.attributes;
+    attributes[CORRELATION_ID_KEY] ??= createCorrelationId();
+    attributes[TRACE_ID_KEY] ??= eventTraceId ?? createCorrelationId();
+    await apiStateRunInContext(
+      async () => {
         const [unparsedError] = await safeAsync(async () => {
-          handle ??= await this.getHandle(options, app);
-          const attributes = event.data.message.attributes;
-          attributes[CORRELATION_ID_KEY] ??= createCorrelationId();
-          attributes[TRACE_ID_KEY] ??= eventTraceId ?? createCorrelationId();
-          await apiStateRunInContext(
-            async () => {
-              schema ??= await options.schema();
-              const json = event.data.message.json;
-              const result = await schema.safeParseAsync(json);
-              if (!result.success) {
-                throw PUB_SUB_BAD_REQUEST(formatZodErrorString(result.error));
-              }
-              await handle({
-                attributes,
-                data: result.data,
-              });
-            },
-            {
-              [APP_SYMBOL]: app,
-              correlationId: attributes[CORRELATION_ID_KEY],
-              traceId: attributes[TRACE_ID_KEY],
-            },
-          );
+          const handle = await getHandle();
+          const schema = await getSchema();
+          const json = event.data.message.json;
+          const result = await schema.safeParseAsync(json);
+          if (!result.success) {
+            throw PUB_SUB_BAD_REQUEST(formatZodErrorString(result.error));
+          }
+          await handle({
+            attributes,
+            data: result.data,
+          });
         });
         if (!unparsedError) {
           return;
@@ -108,6 +137,11 @@ export class PubSubHandlerFactory {
             json: event.data.message.json,
           },
         });
+      },
+      {
+        [APP_SYMBOL]: app,
+        correlationId: attributes[CORRELATION_ID_KEY],
+        traceId: attributes[TRACE_ID_KEY],
       },
     );
   }

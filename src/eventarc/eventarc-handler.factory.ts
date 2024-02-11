@@ -30,7 +30,7 @@ import { EventarcData } from './eventarc-data.schema.js';
 
 export type EventarcHandle<Schema extends ZodSchema> = (
   event: z.infer<Schema>,
-) => Promise<void> | void;
+) => Promise<void>;
 export interface EventarcHandler<Schema extends ZodSchema> {
   handle: EventarcHandle<Schema>;
 }
@@ -52,6 +52,17 @@ export type EventarcHandlerFactoryOptions = Omit<
   'eventType' | 'eventFilters' | 'eventFilterPathPatterns'
 >;
 
+interface HandleCloudEventOptions<
+  EventType extends string = string,
+  Schema extends ZodSchema = ZodSchema,
+> {
+  event: CloudEvent<unknown>;
+  options: EventarcHandlerOptions<EventType, Schema>;
+  app: INestApplicationContext;
+  getHandle(): Promise<EventarcHandle<Schema>>;
+  getSchema(): Promise<Schema>;
+}
+
 export class EventarcHandlerFactory {
   constructor(
     private readonly options: EventarcHandlerFactoryOptions,
@@ -59,49 +70,68 @@ export class EventarcHandlerFactory {
   ) {}
 
   create<EventType extends string, Schema extends ZodSchema>(
-    eventOptions: EventarcHandlerOptions<EventType, Schema>,
+    options: EventarcHandlerOptions<EventType, Schema>,
   ): CloudFunction<CloudEvent<unknown>> {
     let schema: Schema | undefined;
     let handle: EventarcHandle<Schema> | undefined;
+    const getSchema = async () => (schema ??= await options.schema());
     return onCustomEventPublished(
       {
-        eventType: eventOptions.eventType,
-        eventFilters: eventOptions.eventFilters,
-        eventFilterPathPatterns: eventOptions.eventFilterPathPatterns,
+        eventType: options.eventType,
+        eventFilters: options.eventFilters,
+        eventFilterPathPatterns: options.eventFilterPathPatterns,
         ...this.options,
       },
       async (event) => {
         const app = await this.getApp();
+        const getHandle = async () =>
+          (handle ??= await this.getHandle(options, app));
+        await this.handleCloudEvent({
+          app,
+          options,
+          event,
+          getSchema,
+          getHandle,
+        });
+      },
+    );
+  }
+
+  private async handleCloudEvent<
+    EventType extends string,
+    Schema extends ZodSchema,
+  >({
+    options,
+    app,
+    event,
+    getSchema,
+    getHandle,
+  }: HandleCloudEventOptions<EventType, Schema>) {
+    const eventDataResult = EventarcData.safeParse(event.data);
+    const dataResult = eventDataResult.success
+      ? eventDataResult.data
+      : undefined;
+    const correlationId = dataResult?.correlationId ?? createCorrelationId();
+    const traceId =
+      dataResult?.traceId ??
+      getTraceIdFromEvent(event) ??
+      createCorrelationId();
+    await apiStateRunInContext(
+      async () => {
         const [unparsedError] = await safeAsync(async () => {
-          const eventDataResult = EventarcData.safeParse(event.data);
           if (!eventDataResult.success) {
             throw EVENTARC_BAD_FORMAT(
               formatZodErrorString(eventDataResult.error),
             );
           }
-          const correlationId =
-            eventDataResult.data.correlationId ?? createCorrelationId();
-          const traceId =
-            eventDataResult.data.traceId ??
-            getTraceIdFromEvent(event) ??
-            createCorrelationId();
-          await apiStateRunInContext(
-            async () => {
-              schema ??= await eventOptions.schema();
-              handle ??= await this.getHandle(eventOptions, app);
-              const json = eventDataResult.data.body;
-              const result = await schema.safeParseAsync(json);
-              if (!result.success) {
-                throw EVENTARC_BAD_REQUEST(formatZodErrorString(result.error));
-              }
-              await handle(result.data);
-            },
-            {
-              [APP_SYMBOL]: app,
-              correlationId,
-              traceId,
-            },
-          );
+          const schema = await getSchema();
+          const handle = await getHandle();
+          const json = eventDataResult.data.body;
+          const result = await schema.safeParseAsync(json);
+          if (!result.success) {
+            throw EVENTARC_BAD_REQUEST(formatZodErrorString(result.error));
+          }
+          await handle(result.data);
         });
         if (!unparsedError) {
           return;
@@ -111,9 +141,14 @@ export class EventarcHandlerFactory {
           type: CloudEventErrorType.Eventarc,
           error: unparsedError,
           app,
-          eventType: eventOptions.eventType,
+          eventType: options.eventType,
           data: event.data,
         });
+      },
+      {
+        [APP_SYMBOL]: app,
+        correlationId,
+        traceId,
       },
     );
   }

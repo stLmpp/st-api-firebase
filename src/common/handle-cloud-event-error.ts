@@ -10,6 +10,8 @@ import {
 
 import { FirebaseAdminFirestore } from '../firebase-admin/firebase-admin-firestore.js';
 
+import { removeCircular } from './remove-circular.js';
+
 export enum CloudEventErrorType {
   Eventarc = 'Eventarc',
   PubSub = 'PubSub',
@@ -59,20 +61,25 @@ export async function handleCloudEventError(
 ): Promise<void> {
   const context = getContext(options);
   const { error: unparsedError, app, ...optionsRest } = options;
+  const errorJson = removeCircular(unparsedError);
   Logger.error(
     `[${context}] Has an error: ${JSON.stringify({
-      error: unparsedError,
+      error: errorJson,
       errorString: String(unparsedError),
     })}`,
   );
   const [, traceId] = safe(() => getTraceId());
   const [, correlationId] = safe(() => getCorrelationId());
   const [errorFirestore] = await safeAsync(async () => {
-    const error =
-      unparsedError instanceof Exception
-        ? unparsedError
-        : UNKNOWN_INTERNAL_SERVER_ERROR();
+    const isException = unparsedError instanceof Exception;
+    const error = isException ? unparsedError : UNKNOWN_INTERNAL_SERVER_ERROR();
     const firestore = app.get(FirebaseAdminFirestore);
+    const originalError = isException
+      ? undefined
+      : {
+          json: JSON.stringify(errorJson),
+          string: String(unparsedError),
+        };
     await firestore
       .collection('event-errors')
       .doc()
@@ -80,7 +87,9 @@ export async function handleCloudEventError(
         traceId,
         correlationId,
         error: error.toJSON(),
+        originalError,
         date: new Date(),
+        isException,
         ...optionsRest,
       });
   });
@@ -89,7 +98,7 @@ export async function handleCloudEventError(
   }
   Logger.error(
     `[${context}] Error trying to register event error: ${JSON.stringify({
-      error: errorFirestore,
+      error: removeCircular(errorFirestore),
       errorString: String(errorFirestore),
     })}`,
   );
