@@ -193,9 +193,15 @@ window.__request__interceptor = (request) => {
 }`,
           },
         },
-        getTraceId: (request) =>
-          request.get(TRACE_ID_HEADER) ||
-          request.get(TRACE_ID_HEADER.toLowerCase()),
+        getTraceId: (request) => {
+          const traceId =
+            request.get(TRACE_ID_HEADER) ||
+            request.get(TRACE_ID_HEADER.toLowerCase());
+          if (!traceId) {
+            return;
+          }
+          return traceId.split('/').at(0);
+        },
       },
     );
     await app.init();
