@@ -1,7 +1,7 @@
 import { INestApplication, INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { configureApp } from '@st-api/core';
+import { configureApp, ConfigureAppOptions } from '@st-api/core';
 import express, { Express } from 'express';
 import { defineInt } from 'firebase-functions/params';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
@@ -29,6 +29,10 @@ type StFirebaseAppRecord = Record<string, CloudFunction<CloudEvent<unknown>>>;
 
 export interface StFirebaseAppOptions {
   secrets?: HttpsOptions['secrets'];
+  swagger?: Pick<
+    NonNullable<ConfigureAppOptions['swagger']>,
+    'documentBuilder' | 'documentFactory'
+  >;
 }
 
 const MAX_INSTANCES = defineInt('MAX_INSTANCES', {
@@ -171,6 +175,8 @@ export class StFirebaseApp {
       }),
       {
         swagger: {
+          documentBuilder: this.options?.swagger?.documentBuilder,
+          documentFactory: this.options?.swagger?.documentFactory,
           options: {
             swaggerOptions: {
               requestInterceptor: (request: unknown) =>
