@@ -5,7 +5,7 @@ import {
   ThrottlerOptionsArgs,
   TOO_MANY_REQUESTS,
 } from '@st-api/core';
-import { FirebaseFunctionsRateLimiter } from 'firebase-functions-rate-limiter';
+import { FirebaseFunctionsRateLimiter } from '@st-api/firebase-functions-rate-limiter';
 
 import { FirebaseAdminFirestore } from './firebase-admin-firestore.js';
 import { FirebaseFunctionsRateLimiterToken } from './firebase-functions-rate-limiter.token.js';

@@ -1,7 +1,7 @@
 import { ExecutionContext } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { TOO_MANY_REQUESTS } from '@st-api/core';
-import { FirebaseFunctionsRateLimiter } from 'firebase-functions-rate-limiter';
+import { FirebaseFunctionsRateLimiter } from '@st-api/firebase-functions-rate-limiter';
 import { mock } from 'vitest-mock-extended';
 
 import { FirebaseAdminFirestore } from './firebase-admin-firestore.js';

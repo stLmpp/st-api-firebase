@@ -6,11 +6,11 @@ import {
   ThrottlerOptions,
   ThrottlerOptionsToken,
 } from '@st-api/core';
+import { FirebaseFunctionsRateLimiter } from '@st-api/firebase-functions-rate-limiter';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getEventarc } from 'firebase-admin/eventarc';
 import { getFirestore } from 'firebase-admin/firestore';
-import { FirebaseFunctionsRateLimiter } from 'firebase-functions-rate-limiter/dist/FirebaseFunctionsRateLimiter.js';
 
 import { isEmulator } from '../common/is-emulator.js';
 import { EventarcController } from '../eventarc/eventarc.controller.js';
