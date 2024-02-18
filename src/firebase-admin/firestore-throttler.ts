@@ -5,13 +5,11 @@ import {
   ThrottlerOptionsArgs,
   TOO_MANY_REQUESTS,
 } from '@st-api/core';
-import { FirebaseFunctionsRateLimiter } from '@st-api/firebase-functions-rate-limiter';
 import { z } from 'zod';
 
 import { Logger } from '../logger.js';
 
 import { FirebaseAdminFirestore } from './firebase-admin-firestore.js';
-import { FirebaseFunctionsRateLimiterToken } from './firebase-functions-rate-limiter.token.js';
 
 export const FirestoreThrottlerCollectionNameToken =
   'FirestoreThrottlerCollectionNameToken';
@@ -27,8 +25,6 @@ export class FirestoreThrottler extends Throttler {
     private readonly firebaseAdminFirestore: FirebaseAdminFirestore,
     @Inject(FirestoreThrottlerCollectionNameToken)
     private readonly collectionName: string,
-    @Inject(FirebaseFunctionsRateLimiterToken)
-    private readonly firebaseFunctionsRateLimiter: typeof FirebaseFunctionsRateLimiter,
     @Inject(FirestoreThrottlerDisabled)
     private readonly firestoreThrottlerDisabled: boolean,
     @Inject(StApiName)

@@ -6,7 +6,6 @@ import {
   ThrottlerOptions,
   ThrottlerOptionsToken,
 } from '@st-api/core';
-import { FirebaseFunctionsRateLimiter } from '@st-api/firebase-functions-rate-limiter';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getEventarc } from 'firebase-admin/eventarc';
@@ -27,7 +26,6 @@ import {
   FirebaseAdminOptionsToken,
   FirebaseAdminOptionsType,
 } from './firebase-admin.config.js';
-import { FirebaseFunctionsRateLimiterToken } from './firebase-functions-rate-limiter.token.js';
 import {
   FirestoreThrottler,
   FirestoreThrottlerCollectionNameToken,
@@ -105,10 +103,6 @@ const DEFAULT_THROTTLER_LIMIT = 90;
       provide: FirebaseAdminEventarc,
       useFactory: (app: FirebaseAdminApp) => getEventarc(app),
       inject: [FirebaseAdminApp],
-    },
-    {
-      provide: FirebaseFunctionsRateLimiterToken,
-      useValue: FirebaseFunctionsRateLimiter,
     },
     Eventarc,
   ],
