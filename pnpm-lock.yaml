@@ -47,8 +47,8 @@ devDependencies:
     specifier: ~1.1.0
     version: 1.1.0(@swc/core@1.4.1)(@types/node@20.11.19)(@vitest/ui@1.3.0)(typescript@5.3.3)
   '@st-api/core':
-    specifier: ~4.2.2
-    version: 4.2.2(@nestjs/common@10.3.3)(@nestjs/config@3.2.0)(@nestjs/core@10.3.3)(@nestjs/platform-express@10.3.3)(@nestjs/swagger@7.3.0)(@nestjs/throttler@5.1.2)(reflect-metadata@0.2.1)(zod@3.22.4)
+    specifier: ~4.3.0
+    version: 4.3.0(@nestjs/common@10.3.3)(@nestjs/config@3.2.0)(@nestjs/core@10.3.3)(@nestjs/platform-express@10.3.3)(@nestjs/swagger@7.3.0)(@nestjs/throttler@5.1.2)(reflect-metadata@0.2.1)(zod@3.22.4)
   '@swc/core':
     specifier: ~1.4.1
     version: 1.4.1
@@ -1579,8 +1579,8 @@ packages:
       - typescript
     dev: true
 
-  /@st-api/core@4.2.2(@nestjs/common@10.3.3)(@nestjs/config@3.2.0)(@nestjs/core@10.3.3)(@nestjs/platform-express@10.3.3)(@nestjs/swagger@7.3.0)(@nestjs/throttler@5.1.2)(reflect-metadata@0.2.1)(zod@3.22.4):
-    resolution: {integrity: sha512-szOkcOcoth5Y8rn/5qF6KfJPWENDb4s3ybYCL+ycfWc6smVKJ4q3X0Pe00Vz25dGoPPCqbuxj78Xf0yMcsDwhg==}
+  /@st-api/core@4.3.0(@nestjs/common@10.3.3)(@nestjs/config@3.2.0)(@nestjs/core@10.3.3)(@nestjs/platform-express@10.3.3)(@nestjs/swagger@7.3.0)(@nestjs/throttler@5.1.2)(reflect-metadata@0.2.1)(zod@3.22.4):
+    resolution: {integrity: sha512-qRf7K5Rbs66LtnDtP3WZdOhxwrrfIkR2uG8CuEAt5CbbMig37j+uLCbduRPBGfYidRqf5HLyUwVxENH29j0ZGA==}
     peerDependencies:
       '@nestjs/common': ^10.3.3
       '@nestjs/config': ^3.2.0

@@ -40,6 +40,9 @@ if (isEmulator()) {
   controllers.push(EventarcController);
 }
 
+const DEFAULT_THROTTLER_TTL_IN_SECONDS = 60;
+const DEFAULT_THROTTLER_LIMIT = 90;
+
 @Module({
   exports: [
     FirebaseAdminApp,
@@ -53,8 +56,8 @@ if (isEmulator()) {
       provide: ThrottlerOptionsToken,
       useFactory: (options: FirebaseAdminModuleOptions) =>
         ({
-          ttl: options.throttlerTtl ?? 5,
-          limit: options.throttlerLimit ?? 10,
+          ttl: options.throttlerTtl ?? DEFAULT_THROTTLER_TTL_IN_SECONDS,
+          limit: options.throttlerLimit ?? DEFAULT_THROTTLER_LIMIT,
         }) satisfies ThrottlerOptions,
       inject: [FirebaseAdminOptionsToken],
     },

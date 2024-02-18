@@ -21,3 +21,13 @@ export const EVENTARC_INVALID_HANDLER = exception({
   status: HttpStatus.INTERNAL_SERVER_ERROR,
   errorCode: 'FIREBASE-0005',
 });
+export const PUB_SUB_PUBLISH_ERROR = exception({
+  status: HttpStatus.INTERNAL_SERVER_ERROR,
+  errorCode: 'FIREBASE-0006',
+  message: 'Failed to publish PubSub message',
+});
+export const EVENTARC_PUBLISH_ERROR = exception({
+  status: HttpStatus.INTERNAL_SERVER_ERROR,
+  errorCode: 'FIREBASE-0007',
+  message: 'Failed to publish Eventarc message',
+});

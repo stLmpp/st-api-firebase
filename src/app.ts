@@ -18,6 +18,7 @@ import {
   EventarcHandlerFactoryOptions,
   EventarcHandlerOptions,
 } from './eventarc/eventarc-handler.factory.js';
+import { EVENTARC_PUBLISH_ERROR, PUB_SUB_PUBLISH_ERROR } from './exceptions.js';
 import { Logger } from './logger.js';
 import {
   PubSubHandlerFactory,
@@ -33,6 +34,7 @@ export interface StFirebaseAppOptions {
     NonNullable<ConfigureAppOptions['swagger']>,
     'documentBuilder' | 'documentFactory'
   >;
+  extraGlobalExceptions?: ConfigureAppOptions['extraGlobalExceptions'];
 }
 
 const MAX_INSTANCES = defineInt('MAX_INSTANCES', {
@@ -208,6 +210,11 @@ window.__request__interceptor = (request) => {
           }
           return traceId.split('/').at(0);
         },
+        extraGlobalExceptions: [
+          ...(this.options?.extraGlobalExceptions ?? []),
+          PUB_SUB_PUBLISH_ERROR,
+          EVENTARC_PUBLISH_ERROR,
+        ],
       },
     );
     await app.init();
