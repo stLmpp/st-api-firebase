@@ -6,7 +6,6 @@ import {
   ThrottlerOptions,
   ThrottlerOptionsToken,
 } from '@st-api/core';
-import { FirebaseFunctionsRateLimiter } from '@st-api/firebase-functions-rate-limiter';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getEventarc } from 'firebase-admin/eventarc';
@@ -27,7 +26,6 @@ import {
   FirebaseAdminOptionsToken,
   FirebaseAdminOptionsType,
 } from './firebase-admin.config.js';
-import { FirebaseFunctionsRateLimiterToken } from './firebase-functions-rate-limiter.token.js';
 import {
   FirestoreThrottler,
   FirestoreThrottlerCollectionNameToken,
@@ -39,6 +37,9 @@ const controllers: Type[] = [];
 if (isEmulator()) {
   controllers.push(EventarcController);
 }
+
+const DEFAULT_THROTTLER_TTL_IN_SECONDS = 60;
+const DEFAULT_THROTTLER_LIMIT = 90;
 
 @Module({
   exports: [
@@ -53,8 +54,8 @@ if (isEmulator()) {
       provide: ThrottlerOptionsToken,
       useFactory: (options: FirebaseAdminModuleOptions) =>
         ({
-          ttl: options.throttlerTtl ?? 5,
-          limit: options.throttlerLimit ?? 10,
+          ttl: options.throttlerTtl ?? DEFAULT_THROTTLER_TTL_IN_SECONDS,
+          limit: options.throttlerLimit ?? DEFAULT_THROTTLER_LIMIT,
         }) satisfies ThrottlerOptions,
       inject: [FirebaseAdminOptionsToken],
     },
@@ -102,10 +103,6 @@ if (isEmulator()) {
       provide: FirebaseAdminEventarc,
       useFactory: (app: FirebaseAdminApp) => getEventarc(app),
       inject: [FirebaseAdminApp],
-    },
-    {
-      provide: FirebaseFunctionsRateLimiterToken,
-      useValue: FirebaseFunctionsRateLimiter,
     },
     Eventarc,
   ],
