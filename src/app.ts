@@ -158,7 +158,7 @@ export class StFirebaseApp {
   addPubSub<Topic extends string, Schema extends ZodSchema>(
     options: PubSubHandlerOptions<Topic, Schema>,
   ): this {
-    const key = `pub-sub-${this.pubSubNumber++}`;
+    const key = `pubsub${this.pubSubNumber++}`;
     this.cloudEvents[key] = this.pubSubHandlerFactory.create(options);
     return this;
   }
@@ -166,7 +166,7 @@ export class StFirebaseApp {
   addEventarc<EventType extends string, Schema extends ZodSchema>(
     event: EventarcHandlerOptions<EventType, Schema>,
   ): this {
-    const key = `eventarc-${this.eventNumber++}`;
+    const key = `eventarc${this.eventNumber++}`;
     this.cloudEvents[key] = this.eventarcHandlerFactory.create(event);
     return this;
   }
