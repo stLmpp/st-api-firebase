@@ -1,7 +1,8 @@
 import { DynamicModule, Module } from '@nestjs/common';
-import { NodeEnv, NodeEnvEnum } from '@st-api/core';
 import { FirebaseOptions, initializeApp } from 'firebase/app';
 import { connectAuthEmulator, getAuth } from 'firebase/auth';
+
+import { isEmulator } from '../common/is-emulator.js';
 
 import { FirebaseApp } from './firebase-app.js';
 import { FirebaseAuth } from './firebase-auth.js';
@@ -19,14 +20,14 @@ export class FirebaseModule {
         },
         {
           provide: FirebaseAuth,
-          useFactory: (app: FirebaseApp, nodeEnv: NodeEnvEnum) => {
+          useFactory: (app: FirebaseApp) => {
             const auth = getAuth(app);
-            if (nodeEnv === NodeEnvEnum.Development) {
+            if (isEmulator()) {
               connectAuthEmulator(auth, 'http://127.0.0.1:9099');
             }
             return auth;
           },
-          inject: [FirebaseApp, NodeEnv],
+          inject: [FirebaseApp],
         },
       ],
     };

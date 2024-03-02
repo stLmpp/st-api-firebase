@@ -5,6 +5,7 @@ import {
   ThrottlerOptionsArgs,
   TOO_MANY_REQUESTS,
 } from '@st-api/core';
+import type { Request } from 'express';
 import { z } from 'zod';
 
 import { Logger } from '../logger.js';
@@ -43,7 +44,11 @@ export class FirestoreThrottler extends Throttler {
     if (this.firestoreThrottlerDisabled) {
       return;
     }
-    const key = `${this.stApiName}-${context.getClass().name}-${context.getHandler().name}-${context.switchToHttp().getRequest().ip}`;
+    const appName = this.stApiName;
+    const className = context.getClass().name;
+    const handlerName = context.getHandler().name;
+    const ip = context.switchToHttp().getRequest<Request>().ip;
+    const key = `${appName}-${className}-${handlerName}-${ip}`;
     const document = this.firebaseAdminFirestore
       .collection(this.collectionName)
       .doc(key);

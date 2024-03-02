@@ -13,6 +13,7 @@ import {
 import { Class } from 'type-fest';
 import { ZodSchema } from 'zod';
 
+import { isEmulator } from './common/is-emulator.js';
 import {
   EventarcHandlerFactory,
   EventarcHandlerFactoryOptions,
@@ -38,7 +39,7 @@ export interface StFirebaseAppOptions {
 }
 
 const MAX_INSTANCES = defineInt('MAX_INSTANCES', {
-  default: 2,
+  default: 1,
   input: {
     select: {
       options: [
@@ -60,11 +61,6 @@ const MEMORY = defineInt('MEMORY', {
         { label: '256MiB', value: 256 },
         { label: '512MiB', value: 512 },
         { label: '1GiB', value: 1024 },
-        { label: '2GiB', value: 2048 },
-        { label: '4GiB', value: 4096 },
-        { label: '8GiB', value: 8192 },
-        { label: '16GiB', value: 16_384 },
-        { label: '32GiB', value: 32_768 },
       ],
     },
   },
@@ -129,8 +125,17 @@ export class StFirebaseApp {
   private appContext: INestApplicationContext | undefined;
   private eventNumber = 1;
   private pubSubNumber = 1;
+  private hasHttpHandler = false;
 
-  getHttpHandler(): HttpsFunction {
+  withHttpHandler(): this {
+    this.hasHttpHandler = true;
+    return this;
+  }
+
+  getHttpHandler(): HttpsFunction | undefined {
+    if (!this.hasHttpHandler && !isEmulator()) {
+      return undefined;
+    }
     return onRequest(
       {
         secrets: this.options?.secrets ?? [],
@@ -153,7 +158,7 @@ export class StFirebaseApp {
   addPubSub<Topic extends string, Schema extends ZodSchema>(
     options: PubSubHandlerOptions<Topic, Schema>,
   ): this {
-    const key = `pubSub${this.pubSubNumber++}`;
+    const key = `pub-sub-${this.pubSubNumber++}`;
     this.cloudEvents[key] = this.pubSubHandlerFactory.create(options);
     return this;
   }
@@ -161,7 +166,7 @@ export class StFirebaseApp {
   addEventarc<EventType extends string, Schema extends ZodSchema>(
     event: EventarcHandlerOptions<EventType, Schema>,
   ): this {
-    const key = `eventarc${this.eventNumber++}`;
+    const key = `eventarc-${this.eventNumber++}`;
     this.cloudEvents[key] = this.eventarcHandlerFactory.create(event);
     return this;
   }
