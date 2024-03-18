@@ -83,6 +83,9 @@ const TIMEOUT_SECONDS = defineInt('TIMEOUT_SECONDS', {
     },
   },
 });
+const CONCURRENCY = defineInt('CONCURRENCY', {
+  default: 80,
+});
 
 const TRACE_ID_HEADER = 'X-Cloud-Trace-Context';
 
@@ -100,6 +103,8 @@ export class StFirebaseApp {
       memory: MEMORY,
       minInstances: 0,
       timeoutSeconds: TIMEOUT_SECONDS,
+      concurrency: CONCURRENCY,
+      cpu: 'gcf_gen1',
     };
     this.eventarcHandlerFactory = new EventarcHandlerFactory(
       commonOptions,
