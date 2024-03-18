@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { configureApp, ConfigureAppOptions } from '@st-api/core';
 import express, { Express } from 'express';
-import { defineInt } from 'firebase-functions/params';
+import { defineBoolean, defineInt } from 'firebase-functions/params';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
 import {
   HttpsFunction,
@@ -86,6 +86,9 @@ const TIMEOUT_SECONDS = defineInt('TIMEOUT_SECONDS', {
 const CONCURRENCY = defineInt('CONCURRENCY', {
   default: 80,
 });
+const USE_GEN1_CPU = defineBoolean('USE_GEN1_CPU', {
+  default: false,
+});
 
 const TRACE_ID_HEADER = 'X-Cloud-Trace-Context';
 
@@ -104,7 +107,7 @@ export class StFirebaseApp {
       minInstances: 0,
       timeoutSeconds: TIMEOUT_SECONDS,
       concurrency: CONCURRENCY,
-      cpu: 'gcf_gen1',
+      cpu: USE_GEN1_CPU.value() ? 'gcf_gen1' : undefined,
     };
     this.eventarcHandlerFactory = new EventarcHandlerFactory(
       commonOptions,
