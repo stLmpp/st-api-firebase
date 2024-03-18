@@ -7,6 +7,7 @@ import {
   safeAsync,
   UNKNOWN_INTERNAL_SERVER_ERROR,
 } from '@st-api/core';
+import dayjs from 'dayjs';
 
 import { FirebaseAdminFirestore } from '../firebase-admin/firebase-admin-firestore.js';
 
@@ -90,6 +91,7 @@ export async function handleCloudEventError(
         originalError,
         date: new Date(),
         isException,
+        ttl: dayjs().add(14, 'day').toDate(),
         ...optionsRest,
       });
   });
