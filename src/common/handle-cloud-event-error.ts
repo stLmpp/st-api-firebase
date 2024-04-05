@@ -8,8 +8,10 @@ import {
   UNKNOWN_INTERNAL_SERVER_ERROR,
 } from '@st-api/core';
 import dayjs from 'dayjs';
+import { CloudEvent } from 'firebase-functions/v2';
 
 import { FirebaseAdminFirestore } from '../firebase-admin/firebase-admin-firestore.js';
+import { RETRY_EVENT_MAX_DIFF, RetryEvent } from '../retry-event.js';
 
 import { removeCircular } from './remove-circular.js';
 
@@ -19,6 +21,7 @@ export enum CloudEventErrorType {
 }
 
 export interface HandleCloudEventErrorOptions {
+  event: CloudEvent<unknown>;
   error: Error;
   app: INestApplicationContext;
   type: CloudEventErrorType;
@@ -61,6 +64,11 @@ export async function handleCloudEventError(
     | HandleCloudEventEventarcErrorOptions,
 ): Promise<void> {
   const context = getContext(options);
+  const diff = dayjs().diff(dayjs(options.event.time), 'ms');
+  if (options.error instanceof RetryEvent && diff > RETRY_EVENT_MAX_DIFF) {
+    Logger.log(`[${context}] allowing retry`);
+    throw options.error;
+  }
   const { error: unparsedError, app, ...optionsRest } = options;
   const errorJson = removeCircular(unparsedError);
   Logger.error(

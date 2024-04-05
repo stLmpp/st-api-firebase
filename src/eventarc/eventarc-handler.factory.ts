@@ -44,7 +44,13 @@ export type EventarcHandlerOptions<
 > = {
   eventType: EventType;
   schema: () => Promise<Schema> | Schema;
-} & Pick<EventarcTriggerOptions, 'eventFilters' | 'eventFilterPathPatterns'> &
+} & Pick<
+  EventarcTriggerOptions,
+  | 'eventFilters'
+  | 'eventFilterPathPatterns'
+  | 'retry'
+  | 'preserveExternalChanges'
+> &
   EventarcHandlers<Schema>;
 
 export type EventarcHandlerFactoryOptions = Omit<
@@ -136,8 +142,8 @@ export class EventarcHandlerFactory {
         if (!unparsedError) {
           return;
         }
-        // TODO allow retry in some cases
         await handleCloudEventError({
+          event,
           type: CloudEventErrorType.Eventarc,
           error: unparsedError,
           app,

@@ -24,7 +24,10 @@ import { APP_SYMBOL } from '../common/inject.js';
 import { PUB_SUB_BAD_REQUEST, PUB_SUB_INVALID_HANDLER } from '../exceptions.js';
 import { Logger } from '../logger.js';
 
-export type PubSubHandlerFactoryOptions = Omit<PubSubOptions, 'topic'>;
+export type PubSubHandlerFactoryOptions = Omit<
+  PubSubOptions,
+  'topic' | 'eventFilterPathPatterns' | 'eventFilters'
+>;
 
 export interface PubSubEventData<Schema extends ZodSchema> {
   data: z.infer<Schema>;
@@ -49,7 +52,14 @@ export type PubSubHandlerOptions<
 > = {
   topic: Topic;
   schema: () => Promise<Schema> | Schema;
-} & PubSubHandlers<Schema>;
+} & Pick<
+  PubSubOptions,
+  | 'retry'
+  | 'preserveExternalChanges'
+  | 'eventFilterPathPatterns'
+  | 'eventFilters'
+> &
+  PubSubHandlers<Schema>;
 
 interface HandleCloudEventOptions<
   Topic extends string = string,
@@ -78,6 +88,12 @@ export class PubSubHandlerFactory {
       {
         ...this.options,
         topic: options.topic,
+        retry: options.retry ?? this.options.retry,
+        preserveExternalChanges:
+          options.preserveExternalChanges ??
+          this.options.preserveExternalChanges,
+        eventFilterPathPatterns: options.eventFilterPathPatterns,
+        eventFilters: options.eventFilterPathPatterns,
       },
       async (event) => {
         const app = await this.getApp();
@@ -110,7 +126,7 @@ export class PubSubHandlerFactory {
     attributes[TRACE_ID_KEY] ??= eventTraceId ?? createCorrelationId();
     await apiStateRunInContext(
       async () => {
-        const [unparsedError] = await safeAsync(async () => {
+        const [error] = await safeAsync(async () => {
           const handle = await getHandle();
           const schema = await getSchema();
           const json = event.data.message.json;
@@ -123,13 +139,13 @@ export class PubSubHandlerFactory {
             data: result.data,
           });
         });
-        if (!unparsedError) {
+        if (!error) {
           return;
         }
-        // TODO allow retry
         await handleCloudEventError({
+          event,
           app,
-          error: unparsedError,
+          error,
           type: CloudEventErrorType.PubSub,
           topic: options.topic,
           data: {

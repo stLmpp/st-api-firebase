@@ -36,6 +36,16 @@ export interface StFirebaseAppOptions {
     'documentBuilder' | 'documentFactory'
   >;
   extraGlobalExceptions?: ConfigureAppOptions['extraGlobalExceptions'];
+  handlerOptions?: HandlerOptions;
+}
+
+export interface HandlerOptions {
+  preserveExternalChanges?: boolean;
+  retry?: boolean;
+}
+
+export interface StFirebaseAppHttpOptions {
+  preserveExternalChanges?: boolean;
 }
 
 const MAX_INSTANCES = defineInt('MAX_INSTANCES', {
@@ -108,6 +118,7 @@ export class StFirebaseApp {
       timeoutSeconds: TIMEOUT_SECONDS,
       concurrency: CONCURRENCY,
       cpu: USE_GEN1_CPU.value() ? 'gcf_gen1' : undefined,
+      ...this.options?.handlerOptions,
     };
     this.eventarcHandlerFactory = new EventarcHandlerFactory(
       commonOptions,
@@ -140,7 +151,9 @@ export class StFirebaseApp {
     return this;
   }
 
-  getHttpHandler(): HttpsFunction | undefined {
+  getHttpHandler(
+    options: StFirebaseAppHttpOptions = {},
+  ): HttpsFunction | undefined {
     if (!this.hasHttpHandler && !isEmulator()) {
       return undefined;
     }
@@ -151,6 +164,9 @@ export class StFirebaseApp {
         memory: MEMORY,
         minInstances: 0,
         timeoutSeconds: TIMEOUT_SECONDS,
+        preserveExternalChanges:
+          this.options?.handlerOptions?.preserveExternalChanges,
+        ...options,
       },
       async (request, response) => {
         const [, app] = await this.getApp();

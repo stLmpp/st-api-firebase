@@ -1,4 +1,5 @@
 export { inject } from './common/inject.js';
+export { isEmulator } from './common/is-emulator.js';
 export { Eventarc } from './eventarc/eventarc.service.js';
 export { EventarcData } from './eventarc/eventarc-data.schema.js';
 export {
@@ -33,3 +34,4 @@ export {
 
 export { type StFirebaseAppOptions, StFirebaseApp } from './app.js';
 export { Logger } from './logger.js';
+export { RetryEvent } from './retry-event.js';
