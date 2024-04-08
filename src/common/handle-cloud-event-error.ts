@@ -64,10 +64,14 @@ export async function handleCloudEventError(
     | HandleCloudEventEventarcErrorOptions,
 ): Promise<void> {
   const context = getContext(options);
-  const diff = dayjs().diff(dayjs(options.event.time), 'ms');
-  if (options.error instanceof RetryEvent && diff > RETRY_EVENT_MAX_DIFF) {
-    Logger.log(`[${context}] allowing retry`);
-    throw options.error;
+  if (options.error instanceof RetryEvent) {
+    Logger.log(`[${context}] RetryEvent received`);
+    const diff = dayjs().diff(dayjs(options.event.time), 'ms');
+    if (diff <= RETRY_EVENT_MAX_DIFF) {
+      Logger.log(`[${context}] allowing retry`);
+      throw options.error;
+    }
+    Logger.log(`[${context}] not allowing retry because the event is too old`);
   }
   const { error: unparsedError, app, event, ...optionsRest } = options;
   const errorJson = removeCircular(unparsedError);

@@ -1,6 +1,11 @@
 import { ParamIntSchema } from '@st-api/core';
 
-export class RetryEvent extends Error {}
+export class RetryEvent extends Error {
+  constructor() {
+    super('RetryEvent');
+    this.name = 'RetryEvent';
+  }
+}
 
 export const RetryEventDiffSchema = ParamIntSchema.catch(
   () => 12 * 60 * 60 * 1000,
