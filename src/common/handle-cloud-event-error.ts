@@ -69,7 +69,7 @@ export async function handleCloudEventError(
     Logger.log(`[${context}] allowing retry`);
     throw options.error;
   }
-  const { error: unparsedError, app, ...optionsRest } = options;
+  const { error: unparsedError, app, event, ...optionsRest } = options;
   const errorJson = removeCircular(unparsedError);
   Logger.error(
     `[${context}] Has an error: ${JSON.stringify({
@@ -100,6 +100,15 @@ export async function handleCloudEventError(
         date: new Date(),
         isException,
         ttl: dayjs().add(14, 'day').toDate(),
+        event: {
+          specversion: event.specversion,
+          id: event.id,
+          source: event.source,
+          subject: event.subject,
+          type: event.type,
+          time: event.time,
+          data: JSON.stringify(event.data),
+        },
         ...optionsRest,
       });
   });
