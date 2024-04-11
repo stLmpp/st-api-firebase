@@ -52,7 +52,7 @@ export type PubSubHandlerOptions<
 > = {
   topic: Topic;
   schema: () => Promise<Schema> | Schema;
-  loggerContext?: (event: CloudEvent<unknown>) => string;
+  loggerContext?: (event: CloudEvent<MessagePublishedData<unknown>>) => string;
 } & Pick<
   PubSubOptions,
   | 'retry'
