@@ -24,7 +24,7 @@ import {
   EVENTARC_BAD_REQUEST,
   EVENTARC_INVALID_HANDLER,
 } from '../exceptions.js';
-import { Logger } from '../logger.js';
+import { Logger, LOGGER_CONTEXT } from '../logger.js';
 
 import { EventarcData } from './eventarc-data.schema.js';
 
@@ -44,6 +44,7 @@ export type EventarcHandlerOptions<
 > = {
   eventType: EventType;
   schema: () => Promise<Schema> | Schema;
+  loggerContext?: (event: CloudEvent<unknown>) => string;
 } & Pick<
   EventarcTriggerOptions,
   | 'eventFilters'
@@ -122,6 +123,7 @@ export class EventarcHandlerFactory {
       dataResult?.traceId ??
       getTraceIdFromEvent(event) ??
       createCorrelationId();
+    const loggerContext = options.loggerContext?.(event);
     await apiStateRunInContext(
       async () => {
         const [unparsedError] = await safeAsync(async () => {
@@ -152,6 +154,7 @@ export class EventarcHandlerFactory {
         });
       },
       {
+        [LOGGER_CONTEXT]: loggerContext,
         [APP_SYMBOL]: app,
         correlationId,
         traceId,

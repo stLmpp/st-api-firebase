@@ -1,12 +1,14 @@
 import { format } from 'node:util';
 
-import { getCorrelationId, getTraceId, safe } from '@st-api/core';
+import { getCorrelationId, getStateKey, getTraceId, safe } from '@st-api/core';
 import { LogEntry, LogSeverity } from 'firebase-functions/logger';
 import { logger } from 'firebase-functions/v2';
 import { ConditionalKeys } from 'type-fest';
 
 import { isEmulator } from './common/is-emulator.js';
 import { removeCircular } from './common/remove-circular.js';
+
+export const LOGGER_CONTEXT = Symbol('LoggerContext');
 
 interface EntryFromArgs {
   severity: LogSeverity;
@@ -47,6 +49,10 @@ function entryFromArgs({ args, scope, severity }: EntryFromArgs): LogEntry {
 }
 
 function getEntryAndMessage(args: unknown[]) {
+  const [, context] = safe(() => getStateKey(LOGGER_CONTEXT));
+  if (context) {
+    args.unshift(`[${String(context)}]`);
+  }
   let entry: object = {};
   const lastArgument = args.at(-1);
   if (
