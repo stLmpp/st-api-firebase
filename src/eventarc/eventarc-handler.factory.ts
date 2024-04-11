@@ -44,7 +44,7 @@ export type EventarcHandlerOptions<
 > = {
   eventType: EventType;
   schema: () => Promise<Schema> | Schema;
-  loggerContext?: (event: CloudEvent<unknown>) => string;
+  loggerContext?: (event: CloudEvent<unknown>) => string | undefined;
 } & Pick<
   EventarcTriggerOptions,
   | 'eventFilters'
