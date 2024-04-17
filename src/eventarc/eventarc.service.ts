@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   coerceArray,
   getCorrelationId,
+  getExecutionId,
   getTraceId,
   safeAsync,
   StApiName,
@@ -39,6 +40,7 @@ export class Eventarc {
             body: item.body,
             traceId: getTraceId(),
             correlationId: getCorrelationId(),
+            originExecutionId: getExecutionId(),
           } satisfies EventarcData,
           type: item.type,
           source: this.stApiName,

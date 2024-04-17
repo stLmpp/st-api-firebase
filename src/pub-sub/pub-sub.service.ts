@@ -1,8 +1,17 @@
 import { PubSub as GooglePubSub, type Topic } from '@google-cloud/pubsub';
 import { Injectable } from '@nestjs/common';
-import { getCorrelationId, getTraceId, safeAsync } from '@st-api/core';
+import {
+  getCorrelationId,
+  getExecutionId,
+  getTraceId,
+  safeAsync,
+} from '@st-api/core';
 
-import { CORRELATION_ID_KEY, TRACE_ID_KEY } from '../common/constants.js';
+import {
+  CORRELATION_ID_KEY,
+  ORIGIN_EXECUTION_ID,
+  TRACE_ID_KEY,
+} from '../common/constants.js';
 import { isEmulator } from '../common/is-emulator.js';
 import { PUB_SUB_PUBLISH_ERROR } from '../exceptions.js';
 import { Logger } from '../logger.js';
@@ -20,6 +29,7 @@ export class PubSub {
     message.attributes ??= {};
     message.attributes[CORRELATION_ID_KEY] ??= getCorrelationId();
     message.attributes[TRACE_ID_KEY] ??= getTraceId();
+    message.attributes[ORIGIN_EXECUTION_ID] = getExecutionId();
     const [error] = await safeAsync(() =>
       this.googlePubSub.topic(topic).publishMessage(message),
     );

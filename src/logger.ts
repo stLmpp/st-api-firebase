@@ -1,6 +1,12 @@
 import { format } from 'node:util';
 
-import { getCorrelationId, getStateKey, getTraceId, safe } from '@st-api/core';
+import {
+  getCorrelationId,
+  getExecutionId,
+  getStateKey,
+  getTraceId,
+  safe,
+} from '@st-api/core';
 import { LogEntry, LogSeverity } from 'firebase-functions/logger';
 import { logger } from 'firebase-functions/v2';
 import { ConditionalKeys } from 'type-fest';
@@ -23,7 +29,8 @@ interface EntryFromArgs {
  * @param severity
  */
 function entryFromArgs({ args, scope, severity }: EntryFromArgs): LogEntry {
-  let { entry, message, traceId, correlationId } = getEntryAndMessage(args);
+  let { entry, message, traceId, correlationId, executionId } =
+    getEntryAndMessage(args);
   if (
     severity === 'ERROR' &&
     !args.some((argument) => argument instanceof Error)
@@ -39,6 +46,7 @@ function entryFromArgs({ args, scope, severity }: EntryFromArgs): LogEntry {
     metadata: {
       traceId,
       correlationId,
+      executionId,
       scope,
     },
   };
@@ -66,7 +74,8 @@ function getEntryAndMessage(args: unknown[]) {
   const message = format(...args);
   const [, traceId] = safe(() => getTraceId());
   const [, correlationId] = safe(() => getCorrelationId());
-  return { entry, message, traceId, correlationId };
+  const [, executionId] = safe(() => getExecutionId());
+  return { entry, message, traceId, correlationId, executionId };
 }
 
 const fromSeverityToConsoleLog: Record<

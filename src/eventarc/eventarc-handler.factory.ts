@@ -114,7 +114,6 @@ export class EventarcHandlerFactory {
     getSchema,
     getHandle,
   }: HandleCloudEventOptions<EventType, Schema>) {
-    Logger.debug(`[Eventarc - ${options.eventType}] Event received`, { event });
     const eventDataResult = EventarcData.safeParse(event.data);
     const dataResult = eventDataResult.success
       ? eventDataResult.data
@@ -127,6 +126,9 @@ export class EventarcHandlerFactory {
     const loggerContext = options.loggerContext?.(event);
     await apiStateRunInContext(
       async () => {
+        Logger.debug(`[Eventarc - ${options.eventType}] Event received`, {
+          event,
+        });
         const [unparsedError] = await safeAsync(async () => {
           if (!eventDataResult.success) {
             throw EVENTARC_BAD_FORMAT(
@@ -159,6 +161,7 @@ export class EventarcHandlerFactory {
         [APP_SYMBOL]: app,
         correlationId,
         traceId,
+        executionId: event.id || undefined,
       },
     );
   }

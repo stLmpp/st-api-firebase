@@ -123,7 +123,6 @@ export class PubSubHandlerFactory {
     getSchema,
     app,
   }: HandleCloudEventOptions<Topic, Schema>) {
-    Logger.debug(`[PubSub - ${options.topic}] Event received`, { event });
     const eventTraceId = getTraceIdFromEvent(event);
     const attributes = event.data.message.attributes;
     attributes[CORRELATION_ID_KEY] ??= createCorrelationId();
@@ -131,6 +130,7 @@ export class PubSubHandlerFactory {
     const loggerContext = options.loggerContext?.(event);
     await apiStateRunInContext(
       async () => {
+        Logger.debug(`[PubSub - ${options.topic}] Event received`, { event });
         const [error] = await safeAsync(async () => {
           const handle = await getHandle();
           const schema = await getSchema();
@@ -164,6 +164,7 @@ export class PubSubHandlerFactory {
         [APP_SYMBOL]: app,
         correlationId: attributes[CORRELATION_ID_KEY],
         traceId: attributes[TRACE_ID_KEY],
+        executionId: event.id || undefined,
       },
     );
   }
