@@ -123,6 +123,7 @@ export class PubSubHandlerFactory {
     getSchema,
     app,
   }: HandleCloudEventOptions<Topic, Schema>) {
+    Logger.debug(`[PubSub - ${options.topic}] Event received`, { event });
     const eventTraceId = getTraceIdFromEvent(event);
     const attributes = event.data.message.attributes;
     attributes[CORRELATION_ID_KEY] ??= createCorrelationId();

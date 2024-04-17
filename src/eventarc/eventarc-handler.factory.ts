@@ -114,6 +114,7 @@ export class EventarcHandlerFactory {
     getSchema,
     getHandle,
   }: HandleCloudEventOptions<EventType, Schema>) {
+    Logger.debug(`[Eventarc - ${options.eventType}] Event received`, { event });
     const eventDataResult = EventarcData.safeParse(event.data);
     const dataResult = eventDataResult.success
       ? eventDataResult.data
