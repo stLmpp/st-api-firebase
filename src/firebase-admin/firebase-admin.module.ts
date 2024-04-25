@@ -1,11 +1,5 @@
 import { DynamicModule, Logger, Module, Type } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
-import {
-  Throttler,
-  ThrottlerGuard,
-  ThrottlerOptions,
-  ThrottlerOptionsToken,
-} from '@st-api/core';
+import { ThrottlerOptions, ThrottlerOptionsToken } from '@st-api/core';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getEventarc } from 'firebase-admin/eventarc';
@@ -26,11 +20,6 @@ import {
   FirebaseAdminOptionsToken,
   FirebaseAdminOptionsType,
 } from './firebase-admin.config.js';
-import {
-  FirestoreThrottler,
-  FirestoreThrottlerCollectionNameToken,
-  FirestoreThrottlerDisabled,
-} from './firestore-throttler.js';
 
 const controllers: Type[] = [];
 
@@ -57,26 +46,6 @@ const DEFAULT_THROTTLER_LIMIT = 90;
           ttl: options.throttlerTtl ?? DEFAULT_THROTTLER_TTL_IN_SECONDS,
           limit: options.throttlerLimit ?? DEFAULT_THROTTLER_LIMIT,
         }) satisfies ThrottlerOptions,
-      inject: [FirebaseAdminOptionsToken],
-    },
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
-    {
-      provide: Throttler,
-      useClass: FirestoreThrottler,
-    },
-    {
-      provide: FirestoreThrottlerCollectionNameToken,
-      useFactory: (options?: FirebaseAdminModuleOptions) =>
-        options?.throttlerFirestoreCollectionName ?? 'rate-limit',
-      inject: [FirebaseAdminOptionsToken],
-    },
-    {
-      provide: FirestoreThrottlerDisabled,
-      useFactory: (options?: FirebaseAdminModuleOptions) =>
-        options?.throttlerDisabled ?? false,
       inject: [FirebaseAdminOptionsToken],
     },
     { provide: FirebaseAdminApp, useFactory: () => initializeApp() },

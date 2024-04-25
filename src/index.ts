@@ -17,11 +17,6 @@ export { FirebaseAdminApp } from './firebase-admin/firebase-admin-app.js';
 export { FirebaseAdminAuth } from './firebase-admin/firebase-admin-auth.js';
 export { FirebaseAdminEventarc } from './firebase-admin/firebase-admin-eventarc.js';
 export { FirebaseAdminFirestore } from './firebase-admin/firebase-admin-firestore.js';
-export {
-  FirestoreThrottler,
-  FirestoreThrottlerDisabled,
-  FirestoreThrottlerCollectionNameToken,
-} from './firebase-admin/firestore-throttler.js';
 export { PubSubModule } from './pub-sub/pub-sub.module.js';
 export { PubSub } from './pub-sub/pub-sub.service.js';
 export {
