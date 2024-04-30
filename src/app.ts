@@ -26,6 +26,7 @@ import {
   PubSubHandlerFactoryOptions,
   PubSubHandlerOptions,
 } from './pub-sub/pub-sub-handler.factory.js';
+import { LoggerMiddleware } from './logger.middleware.js';
 
 type StFirebaseAppRecord = Record<string, CloudFunction<CloudEvent<unknown>>>;
 
@@ -246,6 +247,8 @@ window.__request__interceptor = (request) => {
         ],
       },
     );
+    const loggerMiddleware = new LoggerMiddleware();
+    app.use(loggerMiddleware.use.bind(loggerMiddleware));
     await app.init();
     return (this.apps = [app, expressApp]);
   }
