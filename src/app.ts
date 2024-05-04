@@ -21,12 +21,12 @@ import {
 } from './eventarc/eventarc-handler.factory.js';
 import { EVENTARC_PUBLISH_ERROR, PUB_SUB_PUBLISH_ERROR } from './exceptions.js';
 import { Logger } from './logger.js';
+import { LoggerMiddleware } from './logger.middleware.js';
 import {
   PubSubHandlerFactory,
   PubSubHandlerFactoryOptions,
   PubSubHandlerOptions,
 } from './pub-sub/pub-sub-handler.factory.js';
-import { LoggerMiddleware } from './logger.middleware.js';
 
 type StFirebaseAppRecord = Record<string, CloudFunction<CloudEvent<unknown>>>;
 

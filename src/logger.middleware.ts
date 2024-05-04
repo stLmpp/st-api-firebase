@@ -29,7 +29,7 @@ export class LoggerMiddleware implements NestMiddleware {
     let index = this.headersToHide.length;
     while (index--) {
       const key = this.headersToHide[index]!;
-      headers[key] = '[REDACTED]';
+      headers[key] &&= '[REDACTED]';
     }
     return headers;
   }
