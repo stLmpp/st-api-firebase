@@ -30,3 +30,5 @@ export {
 export { type StFirebaseAppOptions, StFirebaseApp } from './app.js';
 export { Logger } from './logger.js';
 export { RetryEvent } from './retry-event.js';
+
+// TODO expose callables

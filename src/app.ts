@@ -13,6 +13,10 @@ import {
 import { Class } from 'type-fest';
 import { ZodSchema } from 'zod';
 
+import {
+  CallableHandlerFactory,
+  CallableHandlerOptions,
+} from './callable/callable-handler.factory.js';
 import { isEmulator } from './common/is-emulator.js';
 import {
   EventarcHandlerFactory,
@@ -128,6 +132,10 @@ export class StFirebaseApp {
     this.pubSubHandlerFactory = new PubSubHandlerFactory(commonOptions, () =>
       this.getAppContext(),
     );
+    this.callableHandlerFactory = new CallableHandlerFactory(
+      commonOptions,
+      () => this.getAppContext(),
+    );
   }
 
   static create(
@@ -140,7 +148,9 @@ export class StFirebaseApp {
   private readonly logger = Logger.create(this);
   private readonly eventarcHandlerFactory: EventarcHandlerFactory;
   private readonly pubSubHandlerFactory: PubSubHandlerFactory;
+  private readonly callableHandlerFactory: CallableHandlerFactory;
   private readonly cloudEvents: StFirebaseAppRecord = {};
+  private readonly callables: Record<string, CallableFunction> = {};
   private apps: [INestApplication, Express] | undefined;
   private appContext: INestApplicationContext | undefined;
   private eventNumber = 1;
@@ -180,10 +190,23 @@ export class StFirebaseApp {
     return this.cloudEvents;
   }
 
+  getCallableHandlers(): Record<string, CallableFunction> {
+    return this.callables;
+  }
+
+  addCallable<
+    RequestSchema extends ZodSchema,
+    ResponseSchema extends ZodSchema,
+  >(options: CallableHandlerOptions<RequestSchema, ResponseSchema>): this {
+    this.callables[options.name] = this.callableHandlerFactory.create(options);
+    return this;
+  }
+
   addPubSub<Topic extends string, Schema extends ZodSchema>(
     options: PubSubHandlerOptions<Topic, Schema>,
   ): this {
     const key = `pubsub${this.pubSubNumber++}`;
+    // TODO find a way to use the topic name here (maybe pick the last part)
     this.cloudEvents[key] = this.pubSubHandlerFactory.create(options);
     return this;
   }
@@ -191,6 +214,7 @@ export class StFirebaseApp {
   addEventarc<EventType extends string, Schema extends ZodSchema>(
     event: EventarcHandlerOptions<EventType, Schema>,
   ): this {
+    // TODO find a way to use the event name here (maybe pick the last part)
     const key = `eventarc${this.eventNumber++}`;
     this.cloudEvents[key] = this.eventarcHandlerFactory.create(event);
     return this;

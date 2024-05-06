@@ -84,10 +84,14 @@ export class EventarcHandlerFactory {
     const getSchema = async () => (schema ??= await options.schema());
     return onCustomEventPublished(
       {
+        ...this.options,
         eventType: options.eventType,
         eventFilters: options.eventFilters,
         eventFilterPathPatterns: options.eventFilterPathPatterns,
-        ...this.options,
+        preserveExternalChanges:
+          options.preserveExternalChanges ??
+          this.options.preserveExternalChanges,
+        retry: options.retry ?? this.options.retry,
       },
       async (event) => {
         const app = await this.getApp();
