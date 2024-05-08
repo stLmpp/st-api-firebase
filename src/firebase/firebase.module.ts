@@ -32,10 +32,18 @@ export class FirebaseModule {
           provide: FirebaseApp,
           useFactory: () => {
             if (isEmulator()) {
+              const projectId =
+                process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT;
+              if (!projectId) {
+                Logger.debug(
+                  'Could not find projectId on GCP_PROJECT or GCLOUD_PROJECT environment variables. ' +
+                    'Using "dev" as the projectId, this can lead to unexpected bugs',
+                );
+              }
               options ??= {
                 apiKey: 'dev',
                 appId: 'dev',
-                projectId: 'dev',
+                projectId: projectId ?? 'dev',
               };
             }
             const app = initializeApp(options ?? {});
