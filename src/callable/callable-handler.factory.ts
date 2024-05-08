@@ -108,8 +108,9 @@ export class CallableHandlerFactory {
             }
             const { request: requestSchema, response: responseSchema } =
               await getSchema();
-            const requestValidation =
-              await requestSchema.safeParseAsync(callableData);
+            const requestValidation = await requestSchema.safeParseAsync(
+              callableValidation.data.body,
+            );
             if (!requestValidation.success) {
               throw CALLABLE_BAD_REQUEST(
                 formatZodErrorString(requestValidation.error),
