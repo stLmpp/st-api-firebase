@@ -129,7 +129,7 @@ export class Logger {
       const { entry, message, correlationId, traceId, executionId } =
         getEntryAndMessage(args);
       const object = removeCircular({
-        jsonPayload: entry,
+        ...entry,
         message,
         metadata: {
           scope,
