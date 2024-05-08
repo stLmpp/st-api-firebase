@@ -205,7 +205,7 @@ export class StFirebaseApp {
   private getPubSubName(eventName: string): string {
     const [, , , name, version] = eventName.split('.');
     if (name && version) {
-      return `${name}_${version}`;
+      return `pubsub_${name}_${version}`;
     }
     return `pubsub${this.pubSubNumber++}`;
   }
@@ -221,7 +221,7 @@ export class StFirebaseApp {
   private getEventarcName(eventName: string): string {
     const [, , , name, version] = eventName.split('.');
     if (name && version) {
-      return `${name}_${version}`;
+      return `eventarc_${name}_${version}`;
     }
     return `eventarc${this.eventNumber++}`;
   }
