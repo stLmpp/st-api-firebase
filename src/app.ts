@@ -202,20 +202,34 @@ export class StFirebaseApp {
     return this;
   }
 
+  private getPubSubName(eventName: string): string {
+    const [, , , name, version] = eventName.split('.');
+    if (name && version) {
+      return `${name}_${version}`;
+    }
+    return `pubsub${this.pubSubNumber++}`;
+  }
+
   addPubSub<Topic extends string, Schema extends ZodSchema>(
     options: PubSubHandlerOptions<Topic, Schema>,
   ): this {
-    const key = `pubsub${this.pubSubNumber++}`;
-    // TODO find a way to use the topic name here (maybe pick the last part)
+    const key = this.getPubSubName(options.topic);
     this.cloudEvents[key] = this.pubSubHandlerFactory.create(options);
     return this;
+  }
+
+  private getEventarcName(eventName: string): string {
+    const [, , , name, version] = eventName.split('.');
+    if (name && version) {
+      return `${name}_${version}`;
+    }
+    return `eventarc${this.eventNumber++}`;
   }
 
   addEventarc<EventType extends string, Schema extends ZodSchema>(
     event: EventarcHandlerOptions<EventType, Schema>,
   ): this {
-    // TODO find a way to use the event name here (maybe pick the last part)
-    const key = `eventarc${this.eventNumber++}`;
+    const key = this.getEventarcName(event.eventType);
     this.cloudEvents[key] = this.eventarcHandlerFactory.create(event);
     return this;
   }
