@@ -165,3 +165,12 @@ export class CallableHandlerFactory {
     return (...args) => handler.handle(...args);
   }
 }
+
+export function createCallableHandler<
+  RequestSchema extends ZodSchema,
+  ResponseSchema extends ZodSchema,
+>(
+  options: CallableHandlerOptions<RequestSchema, ResponseSchema>,
+): CallableHandlerOptions<RequestSchema, ResponseSchema> {
+  return options;
+}
