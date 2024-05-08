@@ -22,7 +22,7 @@ import {
   CALLABLE_BAD_RESPONSE,
   CALLABLE_INVALID_HANDLER,
 } from '../exceptions.js';
-import { Logger } from '../logger.js';
+import { Logger, LOGGER_CONTEXT } from '../logger.js';
 
 import { CallableData } from './callable-data.schema.js';
 
@@ -98,6 +98,7 @@ export class CallableHandlerFactory {
         const correlationId =
           callableData?.correlationId ?? createCorrelationId();
         const traceId = callableData?.traceId ?? createCorrelationId();
+        const loggerContext = options.loggerContext?.(request);
         return apiStateRunInContext(
           async () => {
             if (!callableValidation.success) {
@@ -133,6 +134,7 @@ export class CallableHandlerFactory {
           },
           {
             [APP_SYMBOL]: app,
+            [LOGGER_CONTEXT]: loggerContext,
             traceId,
             correlationId,
           },

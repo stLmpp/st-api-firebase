@@ -5,6 +5,7 @@ import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
 
 import { EMULATOR_HOST } from '../common/constants.js';
 import { isEmulator } from '../common/is-emulator.js';
+import { Logger } from '../logger.js';
 
 import { FirebaseApp } from './firebase-app.js';
 import { FirebaseAuth } from './firebase-auth.js';
@@ -45,6 +46,9 @@ export class FirebaseModule {
                   'firebase.json -> emulators.functions.port is required',
                 );
               }
+              Logger.debug(
+                `Connecting functions emulator at ${EMULATOR_HOST}:${firebaseJson.emulators.functions.port}`,
+              );
               connectFunctionsEmulator(
                 getFunctions(app),
                 EMULATOR_HOST,
@@ -65,10 +69,9 @@ export class FirebaseModule {
                   'firebase.json -> emulators.auth.port is required',
                 );
               }
-              connectAuthEmulator(
-                auth,
-                `http://${EMULATOR_HOST}:${firebaseJson.emulators.auth.port}`,
-              );
+              const url = `http://${EMULATOR_HOST}:${firebaseJson.emulators.auth.port}`;
+              Logger.debug(`Connecting auth emulator at ${url}`);
+              connectAuthEmulator(auth, url);
             }
             return auth;
           },

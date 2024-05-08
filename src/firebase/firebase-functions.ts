@@ -7,12 +7,7 @@ import {
   getTraceId,
   safeAsync,
 } from '@st-api/core';
-import {
-  Functions,
-  getFunctions,
-  httpsCallable,
-  HttpsCallable,
-} from 'firebase/functions';
+import { getFunctions, httpsCallable, HttpsCallable } from 'firebase/functions';
 import { HttpsError } from 'firebase-functions/v2/https';
 import { z, ZodSchema } from 'zod';
 
@@ -38,24 +33,9 @@ export interface FirebaseFunctionsCallOptions<Schema extends ZodSchema> {
 export class FirebaseFunctions {
   constructor(private readonly firebaseApp: FirebaseApp) {}
 
-  private readonly cache = new Map<string, HttpsCallable>();
-  private functions?: Functions;
-
-  private getFunctions(): Functions {
-    if (!this.functions) {
-      this.functions = getFunctions(this.firebaseApp);
-    }
-    return this.functions;
-  }
-
   private getCallable(name: string): HttpsCallable {
-    if (this.cache.has(name)) {
-      return this.cache.get(name)!;
-    }
-    const functions = this.getFunctions();
-    const callable = httpsCallable(functions, name);
-    this.cache.set(name, callable);
-    return callable;
+    const functions = getFunctions(this.firebaseApp);
+    return httpsCallable(functions, name);
   }
 
   async call<Schema extends ZodSchema>({
