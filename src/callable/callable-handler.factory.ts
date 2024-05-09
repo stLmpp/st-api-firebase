@@ -2,6 +2,7 @@ import { INestApplicationContext } from '@nestjs/common';
 import {
   apiStateRunInContext,
   createCorrelationId,
+  Exception,
   formatZodErrorString,
   getExecutionId,
   safeAsync,
@@ -10,17 +11,20 @@ import {
   CallableFunction,
   CallableOptions,
   CallableRequest,
+  HttpsError,
   onCall,
 } from 'firebase-functions/v2/https';
 import { Class } from 'type-fest';
 import { z, ZodSchema } from 'zod';
 
 import { APP_SYMBOL } from '../common/inject.js';
+import { removeCircular } from '../common/remove-circular.js';
 import {
   CALLABLE_BAD_FORMAT,
   CALLABLE_BAD_REQUEST,
   CALLABLE_BAD_RESPONSE,
   CALLABLE_INVALID_HANDLER,
+  CALLABLE_UNKNOWN_ERROR,
 } from '../exceptions.js';
 import { Logger, LOGGER_CONTEXT } from '../logger.js';
 
@@ -99,46 +103,67 @@ export class CallableHandlerFactory {
           callableData?.correlationId ?? createCorrelationId();
         const traceId = callableData?.traceId ?? createCorrelationId();
         const loggerContext = options.loggerContext?.(request);
-        return apiStateRunInContext(
-          async () => {
-            if (!callableValidation.success) {
-              throw CALLABLE_BAD_FORMAT(
-                formatZodErrorString(callableValidation.error),
+        const [error, result] = await safeAsync(() =>
+          apiStateRunInContext(
+            async () => {
+              if (!callableValidation.success) {
+                throw CALLABLE_BAD_FORMAT(
+                  formatZodErrorString(callableValidation.error),
+                );
+              }
+              const { request: requestSchema, response: responseSchema } =
+                await getSchema();
+              const requestValidation = await requestSchema.safeParseAsync(
+                callableValidation.data.body,
               );
-            }
-            const { request: requestSchema, response: responseSchema } =
-              await getSchema();
-            const requestValidation = await requestSchema.safeParseAsync(
-              callableValidation.data.body,
-            );
-            if (!requestValidation.success) {
-              throw CALLABLE_BAD_REQUEST(
-                formatZodErrorString(requestValidation.error),
-              );
-            }
-            const handle = await getHandle(app);
-            request.data = {
-              body: requestValidation.data,
+              if (!requestValidation.success) {
+                throw CALLABLE_BAD_REQUEST(
+                  formatZodErrorString(requestValidation.error),
+                );
+              }
+              const handle = await getHandle(app);
+              request.data = {
+                body: requestValidation.data,
+                traceId,
+                correlationId,
+                originExecutionId: getExecutionId(),
+              } satisfies CallableData;
+              const response = await handle(request);
+              const responseValidation =
+                await responseSchema.safeParseAsync(response);
+              if (!responseValidation.success) {
+                throw CALLABLE_BAD_RESPONSE(
+                  formatZodErrorString(responseValidation.error),
+                );
+              }
+              return responseValidation.data;
+            },
+            {
+              [APP_SYMBOL]: app,
+              [LOGGER_CONTEXT]: loggerContext,
               traceId,
               correlationId,
-              originExecutionId: getExecutionId(),
-            } satisfies CallableData;
-            const response = await handle(request);
-            const responseValidation =
-              await responseSchema.safeParseAsync(response);
-            if (!responseValidation.success) {
-              throw CALLABLE_BAD_RESPONSE(
-                formatZodErrorString(responseValidation.error),
-              );
-            }
-            return responseValidation.data;
-          },
-          {
-            [APP_SYMBOL]: app,
-            [LOGGER_CONTEXT]: loggerContext,
-            traceId,
-            correlationId,
-          },
+            },
+          ),
+        );
+        if (!error) {
+          return result;
+        }
+        if (error instanceof Exception) {
+          // TODO unknown should be mapped from status codes
+          throw new HttpsError('unknown', error.message, error.toJSON());
+        }
+        const unknownError = CALLABLE_UNKNOWN_ERROR(
+          JSON.stringify({
+            error: removeCircular(error),
+            errorString: String(error),
+          }),
+        );
+        // TODO unknown should be mapped from status codes
+        throw new HttpsError(
+          'unknown',
+          unknownError.message,
+          unknownError.toJSON(),
         );
       },
     );

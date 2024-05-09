@@ -57,3 +57,7 @@ export const CALLABLE_BAD_RESPONSE = exception({
   message:
     'Our server replied with the wrong response. Please contact the support.',
 });
+export const CALLABLE_UNKNOWN_ERROR = exception({
+  status: HttpStatus.INTERNAL_SERVER_ERROR,
+  errorCode: 'FIREBASE-0014',
+});
