@@ -37,6 +37,10 @@ export class FirebaseFunctions {
     const functions = getFunctions(this.firebaseApp);
     return httpsCallable(functions, name);
   }
+  
+  private isHttpsError(error: unknown): error is HttpsError {
+    return !!error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && 'details' in error;
+  }
 
   async call<Schema extends ZodSchema>({
     name,
@@ -65,7 +69,7 @@ export class FirebaseFunctions {
       return [undefined, result.data];
     }
     if (
-      error instanceof HttpsError &&
+      this.isHttpsError(error) &&
       Exception.isExceptionJSON(error.details)
     ) {
       return [Exception.fromJSON(error.details), undefined];
