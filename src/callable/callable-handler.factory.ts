@@ -28,7 +28,7 @@ import {
 } from '../exceptions.js';
 import { Logger, LOGGER_CONTEXT } from '../logger.js';
 
-import { CallableData } from './callable-data.schema.js';
+import { CallableData, CallableDataSchema } from './callable-data.schema.js';
 
 export type CallableHandlerFactoryOptions = CallableOptions;
 
@@ -36,7 +36,7 @@ export type CallableHandle<
   RequestSchema extends ZodSchema,
   ResponseSchema extends ZodSchema,
 > = (
-  event: CallableRequest<z.infer<RequestSchema>>,
+  event: CallableRequest<CallableData<z.infer<RequestSchema>>>,
 ) => Promise<z.input<ResponseSchema>>;
 export interface CallableHandler<
   RequestSchema extends ZodSchema,
@@ -95,7 +95,7 @@ export class CallableHandlerFactory {
       },
       async (request) => {
         const app = await this.getApp();
-        const callableValidation = CallableData.safeParse(request.data);
+        const callableValidation = CallableDataSchema.safeParse(request.data);
         const callableData = callableValidation.success
           ? callableValidation.data
           : undefined;
@@ -127,7 +127,7 @@ export class CallableHandlerFactory {
                 traceId,
                 correlationId,
                 originExecutionId: getExecutionId(),
-              } satisfies CallableData;
+              } satisfies CallableData<RequestSchema>;
               const response = await handle(request);
               const responseValidation =
                 await responseSchema.safeParseAsync(response);
