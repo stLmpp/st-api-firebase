@@ -95,7 +95,10 @@ export class CallableHandlerFactory {
       },
       async (request) => {
         Logger.debug(`[Callable - ${options.name}] Request received`, {
-          request,
+          request: {
+            data: request.data,
+            auth: request.auth,
+          },
         });
         const app = await this.getApp();
         const callableValidation = CallableData.safeParse(request.data);
