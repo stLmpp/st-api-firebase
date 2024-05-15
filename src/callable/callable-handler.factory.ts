@@ -4,7 +4,6 @@ import {
   createCorrelationId,
   Exception,
   formatZodErrorString,
-  getExecutionId,
   safeAsync,
 } from '@st-api/core';
 import {
@@ -28,7 +27,8 @@ import {
 } from '../exceptions.js';
 import { Logger, LOGGER_CONTEXT } from '../logger.js';
 
-import { CallableData, CallableDataSchema } from './callable-data.schema.js';
+import { CallableData } from './callable-data.schema.js';
+import { getHttpsErrorFromStatus } from './https-error-mapping.js';
 
 export type CallableHandlerFactoryOptions = CallableOptions;
 
@@ -36,7 +36,7 @@ export type CallableHandle<
   RequestSchema extends ZodSchema,
   ResponseSchema extends ZodSchema,
 > = (
-  event: CallableRequest<CallableData<z.infer<RequestSchema>>>,
+  event: CallableRequest<z.infer<RequestSchema>>,
 ) => Promise<z.input<ResponseSchema>>;
 export interface CallableHandler<
   RequestSchema extends ZodSchema,
@@ -94,8 +94,11 @@ export class CallableHandlerFactory {
           this.options.preserveExternalChanges,
       },
       async (request) => {
+        Logger.debug(`[Callable - ${options.name}] Request received`, {
+          request,
+        });
         const app = await this.getApp();
-        const callableValidation = CallableDataSchema.safeParse(request.data);
+        const callableValidation = CallableData.safeParse(request.data);
         const callableData = callableValidation.success
           ? callableValidation.data
           : undefined;
@@ -122,12 +125,7 @@ export class CallableHandlerFactory {
                 );
               }
               const handle = await getHandle(app);
-              request.data = {
-                body: requestValidation.data,
-                traceId,
-                correlationId,
-                originExecutionId: getExecutionId(),
-              } satisfies CallableData<RequestSchema>;
+              request.data = requestValidation.data;
               const response = await handle(request);
               const responseValidation =
                 await responseSchema.safeParseAsync(response);
@@ -149,19 +147,26 @@ export class CallableHandlerFactory {
         if (!error) {
           return result;
         }
+        const stringError = JSON.stringify({
+          error: removeCircular(error),
+          errorString: String(error),
+        });
         if (error instanceof Exception) {
-          // TODO unknown should be mapped from status codes
-          throw new HttpsError('unknown', error.message, error.toJSON());
+          Logger.info(
+            `[Callable ${options.name}] known error = ${stringError}`,
+          );
+          throw new HttpsError(
+            getHttpsErrorFromStatus(error.getStatus()),
+            error.message,
+            error.toJSON(),
+          );
         }
-        const unknownError = CALLABLE_UNKNOWN_ERROR(
-          JSON.stringify({
-            error: removeCircular(error),
-            errorString: String(error),
-          }),
+        Logger.error(
+          `[Callable ${options.name}] unknown error = ${stringError}`,
         );
-        // TODO unknown should be mapped from status codes
+        const unknownError = CALLABLE_UNKNOWN_ERROR(stringError);
         throw new HttpsError(
-          'unknown',
+          getHttpsErrorFromStatus(unknownError.getStatus()),
           unknownError.message,
           unknownError.toJSON(),
         );

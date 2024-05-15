@@ -1,12 +1,10 @@
-import { z, ZodSchema } from 'zod';
+import { z } from 'zod';
 
-export const CallableDataSchema = z.object({
+export const CallableData = z.object({
   body: z.any(),
   correlationId: z.string().optional(),
   traceId: z.string().optional(),
   originExecutionId: z.string().optional(),
 });
 
-export type CallableData<RequestSchema extends ZodSchema> = z.infer<
-  typeof CallableDataSchema
-> & { body: z.infer<RequestSchema> };
+export type CallableData = z.infer<typeof CallableData>;
