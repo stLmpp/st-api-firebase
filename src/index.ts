@@ -1,3 +1,9 @@
+export {
+  type CallableHandle,
+  type CallableHandler,
+  type CallableHandlerOptions,
+  createCallableHandler,
+} from './callable/callable-handler.factory.js';
 export { inject } from './common/inject.js';
 export { isEmulator } from './common/is-emulator.js';
 export { Eventarc } from './eventarc/eventarc.service.js';

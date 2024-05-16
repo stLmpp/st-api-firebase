@@ -126,7 +126,7 @@ export class Logger {
   ): void {
     if (isEmulator()) {
       const method = fromSeverityToConsoleLog[severity];
-      const { entry, message, correlationId, traceId } =
+      const { entry, message, correlationId, traceId, executionId } =
         getEntryAndMessage(args);
       const object = removeCircular({
         ...entry,
@@ -135,6 +135,7 @@ export class Logger {
           scope,
           traceId,
           correlationId,
+          executionId,
         },
       });
       return console[method](
