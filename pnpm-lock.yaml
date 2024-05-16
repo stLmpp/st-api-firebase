@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@google-cloud/pubsub':
-        specifier: ~4.4.0
-        version: 4.4.0
       dayjs:
         specifier: ^1.11.11
         version: 1.11.11
@@ -24,6 +21,9 @@ importers:
         specifier: ~4.18.2
         version: 4.18.2
     devDependencies:
+      '@google-cloud/pubsub':
+        specifier: ~4.4.0
+        version: 4.4.0
       '@nestjs/common':
         specifier: ~10.3.8
         version: 10.3.8(reflect-metadata@0.2.2)(rxjs@7.8.1)
