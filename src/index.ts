@@ -17,6 +17,10 @@ export {
 export { FirebaseModule } from './firebase/firebase.module.js';
 export { FirebaseApp } from './firebase/firebase-app.js';
 export { FirebaseAuth } from './firebase/firebase-auth.js';
+export {
+  type FirebaseFunctionsCallOptions,
+  FirebaseFunctions,
+} from './firebase/firebase-functions.js';
 export { type FirebaseAdminModuleOptions } from './firebase-admin/firebase-admin.config.js';
 export { FirebaseAdminModule } from './firebase-admin/firebase-admin.module.js';
 export { FirebaseAdminApp } from './firebase-admin/firebase-admin-app.js';
