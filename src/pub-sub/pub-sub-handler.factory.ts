@@ -22,7 +22,7 @@ import {
 } from '../common/handle-cloud-event-error.js';
 import { APP_SYMBOL } from '../common/inject.js';
 import { PUB_SUB_BAD_REQUEST, PUB_SUB_INVALID_HANDLER } from '../exceptions.js';
-import { Logger, LOGGER_CONTEXT } from '../logger.js';
+import { Logger } from '../logger.js';
 
 export type PubSubHandlerFactoryOptions = Omit<
   PubSubOptions,
@@ -52,9 +52,6 @@ export type PubSubHandlerOptions<
 > = {
   topic: Topic;
   schema: () => Promise<Schema> | Schema;
-  loggerContext?: (
-    event: CloudEvent<MessagePublishedData<unknown>>,
-  ) => string | undefined;
 } & Pick<
   PubSubOptions,
   | 'retry'
@@ -127,7 +124,6 @@ export class PubSubHandlerFactory {
     const attributes = event.data.message.attributes;
     attributes[CORRELATION_ID_KEY] ??= createCorrelationId();
     attributes[TRACE_ID_KEY] ??= eventTraceId ?? createCorrelationId();
-    const loggerContext = options.loggerContext?.(event);
     await apiStateRunInContext(
       async () => {
         Logger.debug(`[PubSub - ${options.topic}] Event received`, { event });
@@ -160,8 +156,9 @@ export class PubSubHandlerFactory {
         });
       },
       {
-        [LOGGER_CONTEXT]: loggerContext,
-        [APP_SYMBOL]: app,
+        metadata: {
+          [APP_SYMBOL]: app,
+        },
         correlationId: attributes[CORRELATION_ID_KEY],
         traceId: attributes[TRACE_ID_KEY],
         executionId: event.id || undefined,

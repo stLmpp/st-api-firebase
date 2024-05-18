@@ -25,7 +25,7 @@ import {
   CALLABLE_INVALID_HANDLER,
   CALLABLE_UNKNOWN_ERROR,
 } from '../exceptions.js';
-import { Logger, LOGGER_CONTEXT } from '../logger.js';
+import { Logger } from '../logger.js';
 
 import { CallableData } from './callable-data.schema.js';
 import { getHttpsErrorFromStatus } from './https-error-mapping.js';
@@ -66,7 +66,6 @@ export type CallableHandlerOptions<
   schema: () =>
     | Promise<CallableHandlerSchema<RequestSchema, ResponseSchema>>
     | CallableHandlerSchema<RequestSchema, ResponseSchema>;
-  loggerContext?: (event: CallableRequest<unknown>) => string | undefined;
 } & Pick<CallableOptions, 'preserveExternalChanges'> &
   CallableHandlers<RequestSchema, ResponseSchema>;
 
@@ -108,7 +107,6 @@ export class CallableHandlerFactory {
         const correlationId =
           callableData?.correlationId ?? createCorrelationId();
         const traceId = callableData?.traceId ?? createCorrelationId();
-        const loggerContext = options.loggerContext?.(request);
         const [error, result] = await safeAsync(() =>
           apiStateRunInContext(
             async () => {
@@ -140,8 +138,9 @@ export class CallableHandlerFactory {
               return responseValidation.data;
             },
             {
-              [APP_SYMBOL]: app,
-              [LOGGER_CONTEXT]: loggerContext,
+              metadata: {
+                [APP_SYMBOL]: app,
+              },
               traceId,
               correlationId,
             },

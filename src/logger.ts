@@ -3,7 +3,8 @@ import { format } from 'node:util';
 import {
   getCorrelationId,
   getExecutionId,
-  getStateKey,
+  getStateMetadata,
+  getStateMetadataKey,
   getTraceId,
   safe,
 } from '@st-api/core';
@@ -57,7 +58,7 @@ function entryFromArgs({ args, scope, severity }: EntryFromArgs): LogEntry {
 }
 
 function getEntryAndMessage(args: unknown[]) {
-  const [, context] = safe(() => getStateKey(LOGGER_CONTEXT));
+  const [, context] = safe(() => getStateMetadataKey(LOGGER_CONTEXT));
   if (context) {
     args.unshift(`[${String(context)}]`);
   }
@@ -170,6 +171,12 @@ export class Logger {
 
   static error(...args: unknown[]): void {
     this.write('ERROR', undefined, args);
+  }
+
+  static setContext(context: string): void {
+    safe(() => {
+      getStateMetadata().set(LOGGER_CONTEXT, context);
+    });
   }
 
   static create(scope: unknown): Logger {
