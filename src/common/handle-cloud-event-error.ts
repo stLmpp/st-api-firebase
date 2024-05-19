@@ -10,33 +10,29 @@ import {
 import dayjs from 'dayjs';
 import { CloudEvent } from 'firebase-functions/v2';
 
+import { CloudEventType } from '../cloud-event-type.enum.js';
 import { FirebaseAdminFirestore } from '../firebase-admin/firebase-admin-firestore.js';
 import { RETRY_EVENT_MAX_DIFF, RetryEvent } from '../retry-event.js';
 
 import { removeCircular } from './remove-circular.js';
 
-export enum CloudEventErrorType {
-  Eventarc = 'Eventarc',
-  PubSub = 'PubSub',
-}
-
 export interface HandleCloudEventErrorOptions {
   event: CloudEvent<unknown>;
   error: Error;
   app: INestApplicationContext;
-  type: CloudEventErrorType;
+  type: CloudEventType;
   data: unknown;
 }
 
 export type HandleCloudEventPubSubErrorOptions =
   HandleCloudEventErrorOptions & {
-    type: CloudEventErrorType.PubSub;
+    type: CloudEventType.PubSub;
     topic: string;
   };
 
 export type HandleCloudEventEventarcErrorOptions =
   HandleCloudEventErrorOptions & {
-    type: CloudEventErrorType.Eventarc;
+    type: CloudEventType.Eventarc;
     eventType: string;
   };
 
@@ -46,10 +42,10 @@ function getContext(
     | HandleCloudEventEventarcErrorOptions,
 ): string {
   switch (options.type) {
-    case CloudEventErrorType.PubSub: {
+    case CloudEventType.PubSub: {
       return `PubSub - ${options.topic}`;
     }
-    case CloudEventErrorType.Eventarc: {
+    case CloudEventType.Eventarc: {
       return `Eventarc - ${options.eventType}`;
     }
     default: {

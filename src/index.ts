@@ -37,6 +37,18 @@ export {
   createPubSubHandler,
 } from './pub-sub/pub-sub-handler.factory.js';
 
-export { type StFirebaseAppOptions, StFirebaseApp } from './app.js';
+export {
+  type StFirebaseAppCallableMiddleware,
+  type StFirebaseAppAdapter,
+  StFirebaseAppDefaultAdapter,
+  type StFirebaseAppEventarcMiddleware,
+  type StFirebaseAppPubSubMiddleware,
+} from './app.adapter.js';
+export { StFirebaseApp } from './app.js';
+export {
+  type StFirebaseAppOptions,
+  type StFirebaseAppHttpOptions,
+  type StFirebaseAppHandlerOptions,
+} from './app.type.js';
 export { Logger } from './logger.js';
 export { RetryEvent } from './retry-event.js';

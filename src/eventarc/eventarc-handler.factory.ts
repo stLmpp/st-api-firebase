@@ -13,11 +13,10 @@ import {
 import { Class } from 'type-fest';
 import { z, ZodSchema } from 'zod';
 
+import { StFirebaseAppEventarcMiddleware } from '../app.adapter.js';
+import { CloudEventType } from '../cloud-event-type.enum.js';
 import { getTraceIdFromEvent } from '../common/get-trace-id-from-event.js';
-import {
-  CloudEventErrorType,
-  handleCloudEventError,
-} from '../common/handle-cloud-event-error.js';
+import { handleCloudEventError } from '../common/handle-cloud-event-error.js';
 import { APP_SYMBOL } from '../common/inject.js';
 import {
   EVENTARC_BAD_FORMAT,
@@ -73,6 +72,7 @@ export class EventarcHandlerFactory {
   constructor(
     private readonly options: EventarcHandlerFactoryOptions,
     private readonly getApp: () => Promise<INestApplicationContext>,
+    private readonly middleware: StFirebaseAppEventarcMiddleware,
   ) {}
 
   create<EventType extends string, Schema extends ZodSchema>(
@@ -128,9 +128,15 @@ export class EventarcHandlerFactory {
       createCorrelationId();
     await apiStateRunInContext(
       async () => {
-        Logger.debug(`[Eventarc - ${options.eventType}] Event received`, {
-          event,
-        });
+        Logger.debug(
+          `[Eventarc - ${options.eventType}] Event received (before middleware)`,
+          { event },
+        );
+        event = this.middleware(event);
+        Logger.debug(
+          `[Eventarc - ${options.eventType}] Event received (after middleware)`,
+          { event },
+        );
         const [unparsedError] = await safeAsync(async () => {
           if (!eventDataResult.success) {
             throw EVENTARC_BAD_FORMAT(
@@ -151,7 +157,7 @@ export class EventarcHandlerFactory {
         }
         await handleCloudEventError({
           event,
-          type: CloudEventErrorType.Eventarc,
+          type: CloudEventType.Eventarc,
           error: unparsedError,
           app,
           eventType: options.eventType,

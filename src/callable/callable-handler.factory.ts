@@ -16,6 +16,7 @@ import {
 import { Class } from 'type-fest';
 import { z, ZodSchema } from 'zod';
 
+import { StFirebaseAppCallableMiddleware } from '../app.adapter.js';
 import { APP_SYMBOL } from '../common/inject.js';
 import { removeCircular } from '../common/remove-circular.js';
 import {
@@ -73,6 +74,7 @@ export class CallableHandlerFactory {
   constructor(
     private readonly options: CallableHandlerFactoryOptions,
     private readonly getApp: () => Promise<INestApplicationContext>,
+    private readonly middleware: StFirebaseAppCallableMiddleware,
   ) {}
 
   create<RequestSchema extends ZodSchema, ResponseSchema extends ZodSchema>(
@@ -93,12 +95,6 @@ export class CallableHandlerFactory {
           this.options.preserveExternalChanges,
       },
       async (request) => {
-        Logger.debug(`[Callable - ${options.name}] Request received`, {
-          request: {
-            data: request.data,
-            auth: request.auth,
-          },
-        });
         const app = await this.getApp();
         const callableValidation = CallableData.safeParse(request.data);
         const callableData = callableValidation.success
@@ -110,6 +106,15 @@ export class CallableHandlerFactory {
         const [error, result] = await safeAsync(() =>
           apiStateRunInContext(
             async () => {
+              Logger.debug(
+                `[Callable - ${options.name}] Request received (before middleware)`,
+                { request: { data: request.data, auth: request.auth } },
+              );
+              request = this.middleware(request);
+              Logger.debug(
+                `[Callable - ${options.name}] Request received (after middleware)`,
+                { request: { data: request.data, auth: request.auth } },
+              );
               if (!callableValidation.success) {
                 throw CALLABLE_BAD_FORMAT(
                   formatZodErrorString(callableValidation.error),

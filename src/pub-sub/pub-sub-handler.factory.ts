@@ -14,12 +14,11 @@ import {
 import { Class } from 'type-fest';
 import { z, ZodSchema } from 'zod';
 
+import { StFirebaseAppPubSubMiddleware } from '../app.adapter.js';
+import { CloudEventType } from '../cloud-event-type.enum.js';
 import { CORRELATION_ID_KEY, TRACE_ID_KEY } from '../common/constants.js';
 import { getTraceIdFromEvent } from '../common/get-trace-id-from-event.js';
-import {
-  CloudEventErrorType,
-  handleCloudEventError,
-} from '../common/handle-cloud-event-error.js';
+import { handleCloudEventError } from '../common/handle-cloud-event-error.js';
 import { APP_SYMBOL } from '../common/inject.js';
 import { PUB_SUB_BAD_REQUEST, PUB_SUB_INVALID_HANDLER } from '../exceptions.js';
 import { Logger } from '../logger.js';
@@ -76,6 +75,7 @@ export class PubSubHandlerFactory {
   constructor(
     private readonly options: PubSubHandlerFactoryOptions,
     private readonly getApp: () => Promise<INestApplicationContext>,
+    private readonly middleware: StFirebaseAppPubSubMiddleware,
   ) {}
 
   create<Topic extends string, Schema extends ZodSchema>(
@@ -126,7 +126,15 @@ export class PubSubHandlerFactory {
     attributes[TRACE_ID_KEY] ??= eventTraceId ?? createCorrelationId();
     await apiStateRunInContext(
       async () => {
-        Logger.debug(`[PubSub - ${options.topic}] Event received`, { event });
+        Logger.debug(
+          `[PubSub - ${options.topic}] Event received (before middleware)`,
+          { event },
+        );
+        event = this.middleware(event);
+        Logger.debug(
+          `[PubSub - ${options.topic}] Event received (after middleware)`,
+          { event },
+        );
         const [error] = await safeAsync(async () => {
           const handle = await getHandle();
           const schema = await getSchema();
@@ -147,7 +155,7 @@ export class PubSubHandlerFactory {
           event,
           app,
           error,
-          type: CloudEventErrorType.PubSub,
+          type: CloudEventType.PubSub,
           topic: options.topic,
           data: {
             attributes: event.data.message.attributes,

@@ -1,23 +1,34 @@
 import { INestApplication, INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { configureApp, ConfigureAppOptions } from '@st-api/core';
+import { configureApp } from '@st-api/core';
 import express, { Express } from 'express';
-import { defineBoolean, defineInt } from 'firebase-functions/params';
-import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
-import {
-  HttpsFunction,
-  HttpsOptions,
-  onRequest,
-} from 'firebase-functions/v2/https';
+import { HttpsFunction, onRequest } from 'firebase-functions/v2/https';
 import { Class } from 'type-fest';
 import { ZodSchema } from 'zod';
 
 import {
+  StFirebaseAppAdapter,
+  StFirebaseAppDefaultAdapter,
+} from './app.adapter.js';
+import {
+  StFirebaseAppHttpOptions,
+  StFirebaseAppOptions,
+  StFirebaseAppRecord,
+} from './app.type.js';
+import {
   CallableHandlerFactory,
   CallableHandlerOptions,
 } from './callable/callable-handler.factory.js';
+import { TRACE_ID_HEADER } from './common/constants.js';
 import { isEmulator } from './common/is-emulator.js';
+import {
+  CONCURRENCY,
+  MAX_INSTANCES,
+  MEMORY,
+  TIMEOUT_SECONDS,
+  USE_GEN1_CPU,
+} from './env-variables.js';
 import {
   EventarcHandlerFactory,
   EventarcHandlerFactoryOptions,
@@ -32,109 +43,40 @@ import {
   PubSubHandlerOptions,
 } from './pub-sub/pub-sub-handler.factory.js';
 
-type StFirebaseAppRecord = Record<string, CloudFunction<CloudEvent<unknown>>>;
-
-export interface StFirebaseAppOptions {
-  secrets?: HttpsOptions['secrets'];
-  swagger?: Pick<
-    NonNullable<ConfigureAppOptions['swagger']>,
-    'documentBuilder' | 'documentFactory'
-  >;
-  extraGlobalExceptions?: ConfigureAppOptions['extraGlobalExceptions'];
-  handlerOptions?: HandlerOptions;
-}
-
-export interface HandlerOptions {
-  preserveExternalChanges?: boolean;
-  retry?: boolean;
-}
-
-export interface StFirebaseAppHttpOptions {
-  preserveExternalChanges?: boolean;
-}
-
-const MAX_INSTANCES = defineInt('MAX_INSTANCES', {
-  default: 1,
-  input: {
-    select: {
-      options: [
-        { label: '1', value: 1 },
-        { label: '2', value: 2 },
-        { label: '3', value: 3 },
-        { label: '4', value: 4 },
-        { label: '5', value: 5 },
-      ],
-    },
-  },
-});
-const MEMORY = defineInt('MEMORY', {
-  default: 256,
-  input: {
-    select: {
-      options: [
-        { label: '128MiB', value: 128 },
-        { label: '256MiB', value: 256 },
-        { label: '512MiB', value: 512 },
-        { label: '1GiB', value: 1024 },
-      ],
-    },
-  },
-});
-const TIMEOUT_SECONDS = defineInt('TIMEOUT_SECONDS', {
-  default: 30,
-  input: {
-    select: {
-      options: [
-        { label: '10', value: 10 },
-        { label: '15', value: 15 },
-        { label: '20', value: 20 },
-        { label: '25', value: 25 },
-        { label: '30', value: 30 },
-        { label: '35', value: 35 },
-        { label: '40', value: 40 },
-        { label: '45', value: 45 },
-        { label: '50', value: 50 },
-      ],
-    },
-  },
-});
-const CONCURRENCY = defineInt('CONCURRENCY', {
-  default: 80,
-});
-const USE_GEN1_CPU = defineBoolean('USE_GEN1_CPU', {
-  default: false,
-});
-
-const TRACE_ID_HEADER = 'X-Cloud-Trace-Context';
-
 export class StFirebaseApp {
   private constructor(
     private readonly appModule: Class<any>,
     private readonly options?: StFirebaseAppOptions,
   ) {
+    this.adapter = options?.adapter ?? new StFirebaseAppDefaultAdapter();
     const commonOptions:
       | EventarcHandlerFactoryOptions
       | PubSubHandlerFactoryOptions = {
-      secrets: options?.secrets ?? [],
-      maxInstances: MAX_INSTANCES,
       retry: false,
-      memory: MEMORY,
-      minInstances: 0,
+      preserveExternalChanges: true,
+      ...this.options?.handlerOptions,
       timeoutSeconds: TIMEOUT_SECONDS,
       concurrency: CONCURRENCY,
       cpu: USE_GEN1_CPU.value() ? 'gcf_gen1' : undefined,
-      ...this.options?.handlerOptions,
+      maxInstances: MAX_INSTANCES,
+      secrets: options?.secrets ?? [],
+      memory: MEMORY,
+      minInstances: 0,
     };
     this.eventarcHandlerFactory = new EventarcHandlerFactory(
       commonOptions,
       () => this.getAppContext(),
+      this.adapter.eventarcMiddleware.bind(this.adapter),
     );
-    this.pubSubHandlerFactory = new PubSubHandlerFactory(commonOptions, () =>
-      this.getAppContext(),
+    this.pubSubHandlerFactory = new PubSubHandlerFactory(
+      commonOptions,
+      () => this.getAppContext(),
+      this.adapter.pubSubMiddleware.bind(this.adapter),
     );
     this.callableHandlerFactory = new CallableHandlerFactory(
       commonOptions,
       () => this.getAppContext(),
+      this.adapter.callableMiddleware.bind(this.adapter),
     );
   }
 
@@ -151,6 +93,7 @@ export class StFirebaseApp {
   private readonly callableHandlerFactory: CallableHandlerFactory;
   private readonly cloudEvents: StFirebaseAppRecord = {};
   private readonly callables: Record<string, CallableFunction> = {};
+  private readonly adapter: StFirebaseAppAdapter;
   private apps: [INestApplication, Express] | undefined;
   private appContext: INestApplicationContext | undefined;
   private eventNumber = 1;
@@ -234,7 +177,7 @@ export class StFirebaseApp {
     return this;
   }
 
-  private async getApp(): Promise<[INestApplication, Express]> {
+  async getApp(): Promise<[INestApplication, Express]> {
     if (this.apps) {
       return this.apps;
     }
@@ -291,7 +234,7 @@ window.__request__interceptor = (request) => {
     return (this.apps = [app, expressApp]);
   }
 
-  private async getAppContext(): Promise<INestApplicationContext> {
+  async getAppContext(): Promise<INestApplicationContext> {
     if (this.appContext) {
       return this.appContext;
     }
