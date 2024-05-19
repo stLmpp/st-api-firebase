@@ -1,12 +1,10 @@
-import { DynamicModule, Logger, Module, Type } from '@nestjs/common';
+import { DynamicModule, Logger, Module } from '@nestjs/common';
 import { ThrottlerOptions, ThrottlerOptionsToken } from '@st-api/core';
 import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getEventarc } from 'firebase-admin/eventarc';
 import { getFirestore } from 'firebase-admin/firestore';
 
-import { isEmulator } from '../common/is-emulator.js';
-import { EventarcController } from '../eventarc/eventarc.controller.js';
 import { Eventarc } from '../eventarc/eventarc.service.js';
 
 import { FirebaseAdminApp } from './firebase-admin-app.js';
@@ -20,12 +18,6 @@ import {
   FirebaseAdminOptionsToken,
   FirebaseAdminOptionsType,
 } from './firebase-admin.config.js';
-
-const controllers: Type[] = [];
-
-if (isEmulator()) {
-  controllers.push(EventarcController);
-}
 
 const DEFAULT_THROTTLER_TTL_IN_SECONDS = 60;
 const DEFAULT_THROTTLER_LIMIT = 90;
@@ -75,7 +67,6 @@ const DEFAULT_THROTTLER_LIMIT = 90;
     },
     Eventarc,
   ],
-  controllers,
 })
 export class FirebaseAdminModule extends FirebaseAdminBaseClass {
   static forRoot(options: FirebaseAdminOptionsType = {}): DynamicModule {

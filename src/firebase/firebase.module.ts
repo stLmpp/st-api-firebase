@@ -1,4 +1,4 @@
-import { DynamicModule, Module, Type } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
 import { FirebaseOptions, initializeApp } from 'firebase/app';
 import { connectAuthEmulator, getAuth } from 'firebase/auth';
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
@@ -9,22 +9,14 @@ import { Logger } from '../logger.js';
 
 import { FirebaseApp } from './firebase-app.js';
 import { FirebaseAuth } from './firebase-auth.js';
-import { FirebaseFunctionsController } from './firebase-functions.controller.js';
 import { FirebaseFunctions } from './firebase-functions.js';
 import { getFirebaseJson } from './get-firebase-json.js';
-
-const controllers: Type[] = [];
-
-if (isEmulator()) {
-  controllers.push(FirebaseFunctionsController);
-}
 
 @Module({})
 export class FirebaseModule {
   static forRoot(options?: FirebaseOptions): DynamicModule {
     return {
       module: FirebaseModule,
-      controllers,
       exports: [FirebaseApp, FirebaseAuth, FirebaseFunctions],
       providers: [
         FirebaseFunctions,

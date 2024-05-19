@@ -18,6 +18,7 @@ import { EventarcData } from './eventarc-data.schema.js';
 interface EventarcPublishOptions {
   type: string;
   body: unknown;
+  attributes?: Record<string, unknown>;
 }
 
 @Injectable()
@@ -41,6 +42,7 @@ export class Eventarc {
             traceId: getTraceId(),
             correlationId: getCorrelationId(),
             originExecutionId: getExecutionId(),
+            attributes: item.attributes ?? {},
           } satisfies EventarcData,
           type: item.type,
           source: this.stApiName,

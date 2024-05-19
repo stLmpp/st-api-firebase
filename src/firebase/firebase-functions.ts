@@ -18,6 +18,7 @@ import {
 } from '../exceptions.js';
 
 import { FirebaseApp } from './firebase-app.js';
+import { CallableData } from '../callable/callable-data.schema.js';
 
 type CallSuccess<T> = [error: undefined, data: T];
 type CallError = [error: Exception, data: undefined];
@@ -27,6 +28,7 @@ export interface FirebaseFunctionsCallOptions<Schema extends ZodSchema> {
   name: string;
   body: unknown;
   schema: Schema;
+  attributes?: Record<string, unknown>;
 }
 
 @Injectable()
@@ -37,15 +39,22 @@ export class FirebaseFunctions {
     const functions = getFunctions(this.firebaseApp);
     return httpsCallable(functions, name);
   }
-  
+
   private isHttpsError(error: unknown): error is HttpsError {
-    return !!error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && 'details' in error;
+    return (
+      !!error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      typeof error.code === 'string' &&
+      'details' in error
+    );
   }
 
   async call<Schema extends ZodSchema>({
     name,
     body,
     schema,
+    attributes,
   }: FirebaseFunctionsCallOptions<Schema>): Promise<
     CallResult<z.infer<Schema>>
   > {
@@ -53,10 +62,11 @@ export class FirebaseFunctions {
     const [error, response] = await safeAsync(() =>
       callable({
         body,
-        correlation: getCorrelationId(),
+        correlationId: getCorrelationId(),
         traceId: getTraceId(),
         originExecutionId: getExecutionId(),
-      }),
+        attributes: attributes ?? {},
+      } satisfies CallableData),
     );
     if (!error) {
       const result = schema.safeParse(response.data);
@@ -68,10 +78,7 @@ export class FirebaseFunctions {
       }
       return [undefined, result.data];
     }
-    if (
-      this.isHttpsError(error) &&
-      Exception.isExceptionJSON(error.details)
-    ) {
+    if (this.isHttpsError(error) && Exception.isExceptionJSON(error.details)) {
       return [Exception.fromJSON(error.details), undefined];
     }
     return [
