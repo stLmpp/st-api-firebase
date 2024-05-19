@@ -15,7 +15,7 @@ import { Logger } from '../logger.js';
 
 import { EventarcData } from './eventarc-data.schema.js';
 
-interface EventarcPublishOptions {
+export interface EventarcPublishOptions {
   type: string;
   body: unknown;
   attributes?: Record<string, unknown>;

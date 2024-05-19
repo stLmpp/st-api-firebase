@@ -7,7 +7,10 @@ export {
 export { CallableData } from './callable/callable-data.schema.js';
 export { inject } from './common/inject.js';
 export { isEmulator } from './common/is-emulator.js';
-export { Eventarc } from './eventarc/eventarc.service.js';
+export {
+  Eventarc,
+  type EventarcPublishOptions,
+} from './eventarc/eventarc.service.js';
 export { EventarcData } from './eventarc/eventarc-data.schema.js';
 export {
   type EventarcHandlerOptions,
