@@ -34,9 +34,15 @@ import {
   EventarcHandlerFactoryOptions,
   EventarcHandlerOptions,
 } from './eventarc/eventarc-handler.factory.js';
-import { EVENTARC_PUBLISH_ERROR, PUB_SUB_PUBLISH_ERROR } from './exceptions.js';
+import {
+  EVENTARC_PUBLISH_ERROR,
+  FUNCTION_CALL_INVALID_RESPONSE,
+  FUNCTION_CALL_UNKNOWN_ERROR,
+  PUB_SUB_PUBLISH_ERROR,
+} from './exceptions.js';
 import { Logger } from './logger.js';
 import { LoggerMiddleware } from './logger.middleware.js';
+import { mergeAppOptions } from './merge-app-options.js';
 import {
   PubSubHandlerFactory,
   PubSubHandlerFactoryOptions,
@@ -46,9 +52,10 @@ import {
 export class StFirebaseApp {
   private constructor(
     private readonly appModule: Class<any>,
-    private readonly options?: StFirebaseAppOptions,
+    options?: StFirebaseAppOptions,
   ) {
     this.adapter = options?.adapter ?? new StFirebaseAppDefaultAdapter();
+    this.options = mergeAppOptions(options ?? {}, this.adapter.options ?? {});
     const commonOptions:
       | EventarcHandlerFactoryOptions
       | PubSubHandlerFactoryOptions = {
@@ -87,6 +94,7 @@ export class StFirebaseApp {
     return new StFirebaseApp(appModule, options);
   }
 
+  private readonly options: StFirebaseAppOptions;
   private readonly logger = Logger.create(this);
   private readonly eventarcHandlerFactory: EventarcHandlerFactory;
   private readonly pubSubHandlerFactory: PubSubHandlerFactory;
@@ -225,6 +233,8 @@ window.__request__interceptor = (request) => {
           ...(this.options?.extraGlobalExceptions ?? []),
           PUB_SUB_PUBLISH_ERROR,
           EVENTARC_PUBLISH_ERROR,
+          FUNCTION_CALL_UNKNOWN_ERROR,
+          FUNCTION_CALL_INVALID_RESPONSE,
         ],
       },
     );
