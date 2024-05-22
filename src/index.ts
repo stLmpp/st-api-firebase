@@ -24,6 +24,9 @@ export { FirebaseAuth } from './firebase/firebase-auth.js';
 export {
   type FirebaseFunctionsCallOptions,
   FirebaseFunctions,
+  type CallableResult,
+  type CallableResultError,
+  type CallableResultSuccess,
 } from './firebase/firebase-functions.js';
 export { type FirebaseAdminModuleOptions } from './firebase-admin/firebase-admin.config.js';
 export { FirebaseAdminModule } from './firebase-admin/firebase-admin.module.js';

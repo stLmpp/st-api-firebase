@@ -11,6 +11,7 @@ import { getFunctions, httpsCallable, HttpsCallable } from 'firebase/functions';
 import { HttpsError } from 'firebase-functions/v2/https';
 import { z, ZodSchema } from 'zod';
 
+import { CallableData } from '../callable/callable-data.schema.js';
 import { removeCircular } from '../common/remove-circular.js';
 import {
   FUNCTION_CALL_INVALID_RESPONSE,
@@ -18,11 +19,10 @@ import {
 } from '../exceptions.js';
 
 import { FirebaseApp } from './firebase-app.js';
-import { CallableData } from '../callable/callable-data.schema.js';
 
-type CallSuccess<T> = [error: undefined, data: T];
-type CallError = [error: Exception, data: undefined];
-type CallResult<T> = CallSuccess<T> | CallError;
+export type CallableResultSuccess<T> = [error: undefined, data: T];
+export type CallableResultError = [error: Exception, data: undefined];
+export type CallableResult<T> = CallableResultSuccess<T> | CallableResultError;
 
 export interface FirebaseFunctionsCallOptions<Schema extends ZodSchema> {
   name: string;
@@ -56,7 +56,7 @@ export class FirebaseFunctions {
     schema,
     attributes,
   }: FirebaseFunctionsCallOptions<Schema>): Promise<
-    CallResult<z.infer<Schema>>
+    CallableResult<z.infer<Schema>>
   > {
     const callable = this.getCallable(name);
     const [error, response] = await safeAsync(() =>
