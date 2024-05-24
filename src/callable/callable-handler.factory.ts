@@ -60,8 +60,8 @@ export interface CallableHandlerSchema<
 }
 
 export type CallableHandlerOptions<
-  RequestSchema extends ZodSchema,
-  ResponseSchema extends ZodSchema,
+  RequestSchema extends ZodSchema = ZodSchema,
+  ResponseSchema extends ZodSchema = ZodSchema,
 > = {
   name: string;
   schema: () =>

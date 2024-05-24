@@ -57,5 +57,9 @@ export {
   type StFirebaseAppHttpOptions,
   type StFirebaseAppHandlerOptions,
 } from './app.type.js';
+export {
+  DefaultFirebaseAppNamingStrategy,
+  type StFirebaseAppNamingStrategy,
+} from './app-naming-strategy.js';
 export { Logger } from './logger.js';
 export { RetryEvent } from './retry-event.js';

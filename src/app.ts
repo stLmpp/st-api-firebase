@@ -8,6 +8,10 @@ import { Class } from 'type-fest';
 import { ZodSchema } from 'zod';
 
 import {
+  DefaultFirebaseAppNamingStrategy,
+  StFirebaseAppNamingStrategy,
+} from './app-naming-strategy.js';
+import {
   StFirebaseAppAdapter,
   StFirebaseAppDefaultAdapter,
 } from './app.adapter.js';
@@ -56,6 +60,8 @@ export class StFirebaseApp {
   ) {
     this.adapter = options?.adapter ?? new StFirebaseAppDefaultAdapter();
     this.options = mergeAppOptions(options ?? {}, this.adapter.options ?? {});
+    this.namingStrategy =
+      options?.namingStrategy ?? new DefaultFirebaseAppNamingStrategy();
     const commonOptions:
       | EventarcHandlerFactoryOptions
       | PubSubHandlerFactoryOptions = {
@@ -102,10 +108,9 @@ export class StFirebaseApp {
   private readonly cloudEvents: StFirebaseAppRecord = {};
   private readonly callables: Record<string, CallableFunction> = {};
   private readonly adapter: StFirebaseAppAdapter;
+  private readonly namingStrategy: StFirebaseAppNamingStrategy;
   private apps: [INestApplication, Express] | undefined;
   private appContext: INestApplicationContext | undefined;
-  private eventNumber = 1;
-  private pubSubNumber = 1;
   private hasHttpHandler = false;
 
   withHttpHandler(): this {
@@ -149,38 +154,23 @@ export class StFirebaseApp {
     RequestSchema extends ZodSchema,
     ResponseSchema extends ZodSchema,
   >(options: CallableHandlerOptions<RequestSchema, ResponseSchema>): this {
-    this.callables[options.name] = this.callableHandlerFactory.create(options);
+    const key = this.namingStrategy.callable(options.name);
+    this.callables[key] = this.callableHandlerFactory.create(options);
     return this;
-  }
-
-  private getPubSubName(eventName: string): string {
-    const [, , , name, version] = eventName.split('.');
-    if (name && version) {
-      return `pubsub_${name}_${version}`;
-    }
-    return `pubsub${this.pubSubNumber++}`;
   }
 
   addPubSub<Topic extends string, Schema extends ZodSchema>(
     options: PubSubHandlerOptions<Topic, Schema>,
   ): this {
-    const key = this.getPubSubName(options.topic);
+    const key = this.namingStrategy.pubSub(options.topic);
     this.cloudEvents[key] = this.pubSubHandlerFactory.create(options);
     return this;
-  }
-
-  private getEventarcName(eventName: string): string {
-    const [, , , name, version] = eventName.split('.');
-    if (name && version) {
-      return `eventarc_${name}_${version}`;
-    }
-    return `eventarc${this.eventNumber++}`;
   }
 
   addEventarc<EventType extends string, Schema extends ZodSchema>(
     event: EventarcHandlerOptions<EventType, Schema>,
   ): this {
-    const key = this.getEventarcName(event.eventType);
+    const key = this.namingStrategy.eventarc(event.eventType);
     this.cloudEvents[key] = this.eventarcHandlerFactory.create(event);
     return this;
   }

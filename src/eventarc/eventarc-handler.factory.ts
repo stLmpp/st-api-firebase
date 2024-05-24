@@ -38,8 +38,8 @@ export type EventarcHandlers<Schema extends ZodSchema> =
   | { handler: Class<EventarcHandler<Schema>> };
 
 export type EventarcHandlerOptions<
-  EventType extends string,
-  Schema extends ZodSchema,
+  EventType extends string = string,
+  Schema extends ZodSchema = ZodSchema,
 > = {
   eventType: EventType;
   schema: () => Promise<Schema> | Schema;
