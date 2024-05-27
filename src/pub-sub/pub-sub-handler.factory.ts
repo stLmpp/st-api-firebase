@@ -130,7 +130,7 @@ export class PubSubHandlerFactory {
           `[PubSub - ${options.topic}] Event received (before middleware)`,
           { event },
         );
-        event = this.middleware(event);
+        event = await this.middleware(event);
         Logger.debug(
           `[PubSub - ${options.topic}] Event received (after middleware)`,
           { event },
@@ -161,6 +161,7 @@ export class PubSubHandlerFactory {
             attributes: event.data.message.attributes,
             json: event.data.message.json,
           },
+          eventTimestamp: event.time,
         });
       },
       {

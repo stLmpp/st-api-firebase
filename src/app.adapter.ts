@@ -19,15 +19,21 @@ export class StFirebaseAppDefaultAdapter implements StFirebaseAppAdapter {
 }
 
 export interface StFirebaseAppEventarcMiddleware {
-  (event: CloudEvent<unknown>): CloudEvent<unknown>;
+  (
+    event: CloudEvent<unknown>,
+  ): CloudEvent<unknown> | Promise<CloudEvent<unknown>>;
 }
 
 export interface StFirebaseAppPubSubMiddleware {
   (
     event: CloudEvent<MessagePublishedData<unknown>>,
-  ): CloudEvent<MessagePublishedData<unknown>>;
+  ):
+    | CloudEvent<MessagePublishedData<unknown>>
+    | Promise<CloudEvent<MessagePublishedData<unknown>>>;
 }
 
 export interface StFirebaseAppCallableMiddleware {
-  (request: CallableRequest<unknown>): CallableRequest<unknown>;
+  (
+    request: CallableRequest<unknown>,
+  ): CallableRequest<unknown> | Promise<CallableRequest<unknown>>;
 }

@@ -3,6 +3,8 @@ import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { configureApp } from '@st-api/core';
 import express, { Express } from 'express';
+import { CloudFunction as CloudFunctionV1 } from 'firebase-functions';
+import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
 import { HttpsFunction, onRequest } from 'firebase-functions/v2/https';
 import { Class } from 'type-fest';
 import { ZodSchema } from 'zod';
@@ -16,8 +18,10 @@ import {
   StFirebaseAppDefaultAdapter,
 } from './app.adapter.js';
 import {
+  StFirebaseAppCustomEventContext,
   StFirebaseAppHttpOptions,
   StFirebaseAppOptions,
+  StFirebaseAppOptionsExtended,
   StFirebaseAppRecord,
 } from './app.type.js';
 import {
@@ -26,6 +30,7 @@ import {
 } from './callable/callable-handler.factory.js';
 import { TRACE_ID_HEADER } from './common/constants.js';
 import { isEmulator } from './common/is-emulator.js';
+import { CustomEventHandlerFactory } from './custom-event/custom-event-handler.factory.js';
 import {
   CONCURRENCY,
   MAX_INSTANCES,
@@ -59,22 +64,37 @@ export class StFirebaseApp {
     options?: StFirebaseAppOptions,
   ) {
     this.adapter = options?.adapter ?? new StFirebaseAppDefaultAdapter();
-    this.options = mergeAppOptions(options ?? {}, this.adapter.options ?? {});
-    this.namingStrategy =
-      options?.namingStrategy ?? new DefaultFirebaseAppNamingStrategy();
-    const commonOptions:
-      | EventarcHandlerFactoryOptions
-      | PubSubHandlerFactoryOptions = {
+    const newOptions = mergeAppOptions(
+      options ?? {},
+      this.adapter.options ?? {},
+    );
+    this.options = {
       retry: false,
       preserveExternalChanges: true,
-      ...this.options?.handlerOptions,
+      ...newOptions,
+      ...newOptions.handlerOptions,
       timeoutSeconds: TIMEOUT_SECONDS,
       concurrency: CONCURRENCY,
       cpu: USE_GEN1_CPU.value() ? 'gcf_gen1' : undefined,
       maxInstances: MAX_INSTANCES,
-      secrets: options?.secrets ?? [],
+      secrets: newOptions.secrets ?? [],
       memory: MEMORY,
       minInstances: 0,
+    };
+    this.namingStrategy =
+      newOptions?.namingStrategy ?? new DefaultFirebaseAppNamingStrategy();
+    const commonOptions:
+      | EventarcHandlerFactoryOptions
+      | PubSubHandlerFactoryOptions = {
+      retry: this.options.retry,
+      preserveExternalChanges: this.options.preserveExternalChanges,
+      timeoutSeconds: this.options.timeoutSeconds,
+      concurrency: this.options.concurrency,
+      cpu: this.options.cpu,
+      maxInstances: this.options.maxInstances,
+      secrets: this.options.secrets,
+      memory: this.options.memory,
+      minInstances: this.options.minInstances,
     };
     this.eventarcHandlerFactory = new EventarcHandlerFactory(
       commonOptions,
@@ -91,6 +111,10 @@ export class StFirebaseApp {
       () => this.getAppContext(),
       this.adapter.callableMiddleware.bind(this.adapter),
     );
+    this.customEventHandlerFactory = new CustomEventHandlerFactory(
+      this.options,
+      () => this.getAppContext(),
+    );
   }
 
   static create(
@@ -100,11 +124,12 @@ export class StFirebaseApp {
     return new StFirebaseApp(appModule, options);
   }
 
-  private readonly options: StFirebaseAppOptions;
+  private readonly options: StFirebaseAppOptionsExtended;
   private readonly logger = Logger.create(this);
   private readonly eventarcHandlerFactory: EventarcHandlerFactory;
   private readonly pubSubHandlerFactory: PubSubHandlerFactory;
   private readonly callableHandlerFactory: CallableHandlerFactory;
+  private readonly customEventHandlerFactory: CustomEventHandlerFactory;
   private readonly cloudEvents: StFirebaseAppRecord = {};
   private readonly callables: Record<string, CallableFunction> = {};
   private readonly adapter: StFirebaseAppAdapter;
@@ -121,18 +146,17 @@ export class StFirebaseApp {
   getHttpHandler(
     options: StFirebaseAppHttpOptions = {},
   ): HttpsFunction | undefined {
-    if (!this.hasHttpHandler && !isEmulator()) {
-      return undefined;
-    }
     return onRequest(
       {
-        secrets: this.options?.secrets ?? [],
-        maxInstances: MAX_INSTANCES,
-        memory: MEMORY,
-        minInstances: 0,
-        timeoutSeconds: TIMEOUT_SECONDS,
-        preserveExternalChanges:
-          this.options?.handlerOptions?.preserveExternalChanges,
+        secrets: this.options.secrets,
+        maxInstances: this.options.maxInstances,
+        memory: this.options.memory,
+        minInstances: this.options.minInstances,
+        timeoutSeconds: this.options.timeoutSeconds,
+        concurrency: this.options.concurrency,
+        cpu: this.options.cpu,
+        preserveExternalChanges: this.options.preserveExternalChanges,
+        omit: !this.hasHttpHandler && !isEmulator(),
         ...options,
       },
       async (request, response) => {
@@ -175,7 +199,21 @@ export class StFirebaseApp {
     return this;
   }
 
-  async getApp(): Promise<[INestApplication, Express]> {
+  addCustomEvent(
+    name: string,
+    callback: (
+      context: StFirebaseAppCustomEventContext,
+    ) => CloudFunction<CloudEvent<unknown>> | CloudFunctionV1<any>,
+  ): this {
+    const key = this.namingStrategy.custom();
+    this.cloudEvents[key] = this.customEventHandlerFactory.create(
+      name,
+      callback,
+    );
+    return this;
+  }
+
+  async getApp(): Promise<[nest: INestApplication, express: Express]> {
     if (this.apps) {
       return this.apps;
     }
@@ -235,12 +273,9 @@ window.__request__interceptor = (request) => {
   }
 
   async getAppContext(): Promise<INestApplicationContext> {
-    if (this.appContext) {
-      return this.appContext;
-    }
-    const app = await NestFactory.createApplicationContext(this.appModule, {
-      logger: this.logger,
-    });
-    return (this.appContext = app);
+    return (this.appContext ??= await NestFactory.createApplicationContext(
+      this.appModule,
+      { logger: this.logger },
+    ));
   }
 }

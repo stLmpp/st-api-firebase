@@ -4,6 +4,7 @@ export interface StFirebaseAppNamingStrategy {
   callable(callableName: string): string;
   pubSub(topic: string): string;
   eventarc(eventType: string): string;
+  custom(): string;
 }
 
 export class DefaultFirebaseAppNamingStrategy
@@ -13,6 +14,7 @@ export class DefaultFirebaseAppNamingStrategy
 
   private pubSubCount = 0;
   private eventarcCount = 0;
+  private customCount = 0;
 
   private sanitizeCallableName(name: string): string {
     return name
@@ -48,5 +50,9 @@ export class DefaultFirebaseAppNamingStrategy
 
   pubSub(): string {
     return `pubsub${this.pubSubCount++ || ''}`;
+  }
+
+  custom(): string {
+    return `custom${this.customCount++ || ''}`;
   }
 }

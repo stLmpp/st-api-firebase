@@ -2,6 +2,7 @@ import { INestApplicationContext, Logger } from '@nestjs/common';
 import {
   Exception,
   getCorrelationId,
+  getExecutionId,
   getTraceId,
   safe,
   safeAsync,
@@ -17,7 +18,8 @@ import { RETRY_EVENT_MAX_DIFF, RetryEvent } from '../retry-event.js';
 import { removeCircular } from './remove-circular.js';
 
 export interface HandleCloudEventErrorOptions {
-  event: CloudEvent<unknown>;
+  event?: CloudEvent<unknown>;
+  eventTimestamp: string;
   error: Error;
   app: INestApplicationContext;
   type: CloudEventType;
@@ -36,10 +38,17 @@ export type HandleCloudEventEventarcErrorOptions =
     eventType: string;
   };
 
+export type HandleCloudEventCustomErrorOptions =
+  HandleCloudEventErrorOptions & {
+    type: CloudEventType.Custom;
+    name: string;
+  };
+
 function getContext(
   options:
     | HandleCloudEventPubSubErrorOptions
-    | HandleCloudEventEventarcErrorOptions,
+    | HandleCloudEventEventarcErrorOptions
+    | HandleCloudEventCustomErrorOptions,
 ): string {
   switch (options.type) {
     case CloudEventType.PubSub: {
@@ -47,6 +56,9 @@ function getContext(
     }
     case CloudEventType.Eventarc: {
       return `Eventarc - ${options.eventType}`;
+    }
+    case CloudEventType.Custom: {
+      return `Custom - ${options.name}`;
     }
     default: {
       return 'Unknown';
@@ -57,12 +69,13 @@ function getContext(
 export async function handleCloudEventError(
   options:
     | HandleCloudEventPubSubErrorOptions
-    | HandleCloudEventEventarcErrorOptions,
+    | HandleCloudEventEventarcErrorOptions
+    | HandleCloudEventCustomErrorOptions,
 ): Promise<void> {
   const context = getContext(options);
   if (options.error instanceof RetryEvent) {
     Logger.log(`[${context}] RetryEvent received`);
-    const diff = dayjs().diff(dayjs(options.event.time), 'ms');
+    const diff = dayjs().diff(dayjs(options.eventTimestamp), 'ms');
     if (diff <= RETRY_EVENT_MAX_DIFF) {
       Logger.log(`[${context}] allowing retry`);
       throw options.error;
@@ -79,6 +92,7 @@ export async function handleCloudEventError(
   );
   const [, traceId] = safe(() => getTraceId());
   const [, correlationId] = safe(() => getCorrelationId());
+  const [, executionId] = safe(() => getExecutionId());
   const [errorFirestore] = await safeAsync(async () => {
     const isException = unparsedError instanceof Exception;
     const error = isException ? unparsedError : UNKNOWN_INTERNAL_SERVER_ERROR();
@@ -95,12 +109,13 @@ export async function handleCloudEventError(
       .create({
         traceId,
         correlationId,
+        executionId,
         error: error.toJSON(),
         originalError,
         date: new Date(),
         isException,
         ttl: dayjs().add(14, 'day').toDate(),
-        event: {
+        event: event && {
           specversion: event.specversion,
           id: event.id,
           source: event.source,

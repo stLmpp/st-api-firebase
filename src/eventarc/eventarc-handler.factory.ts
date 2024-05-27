@@ -132,7 +132,7 @@ export class EventarcHandlerFactory {
           `[Eventarc - ${options.eventType}] Event received (before middleware)`,
           { event },
         );
-        event = this.middleware(event);
+        event = await this.middleware(event);
         Logger.debug(
           `[Eventarc - ${options.eventType}] Event received (after middleware)`,
           { event },
@@ -162,6 +162,7 @@ export class EventarcHandlerFactory {
           app,
           eventType: options.eventType,
           data: event.data,
+          eventTimestamp: event.time,
         });
       },
       {

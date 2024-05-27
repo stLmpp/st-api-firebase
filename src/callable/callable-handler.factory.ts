@@ -110,7 +110,7 @@ export class CallableHandlerFactory {
                 `[Callable - ${options.name}] Request received (before middleware)`,
                 { request: { data: request.data, auth: request.auth } },
               );
-              request = this.middleware(request);
+              request = await this.middleware(request);
               Logger.debug(
                 `[Callable - ${options.name}] Request received (after middleware)`,
                 { request: { data: request.data, auth: request.auth } },
