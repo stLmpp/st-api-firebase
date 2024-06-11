@@ -239,7 +239,7 @@ window.__request__interceptor = (request) => {
   const endPoint = url.pathname;
   const origin = location.origin;
   const path = location.pathname.replace(/\\/help$/, '');
-  const newUrl = origin + path + endPoint
+  let newUrl = origin + path + endPoint
   if (url.searchParams.size) {
     newUrl += '?' + url.searchParams.toString();
   }
