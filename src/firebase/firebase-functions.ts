@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import {
   Exception,
   formatZodErrorString,
@@ -19,6 +18,7 @@ import {
 } from '../exceptions.js';
 
 import { FirebaseApp } from './firebase-app.js';
+import { Injectable } from '@stlmpp/di';
 
 export type CallableResultSuccess<T> = [error: undefined, data: T];
 export type CallableResultError = [error: Exception, data: undefined];

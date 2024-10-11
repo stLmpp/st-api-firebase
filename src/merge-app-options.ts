@@ -1,16 +1,16 @@
 import { StFirebaseAppOptions } from './app.type.js';
+import { HonoAppOptions } from '@st-api/core';
+import { Hono } from 'hono';
 
 export function mergeAppOptions(
   ...options: StFirebaseAppOptions[]
 ): StFirebaseAppOptions {
   if (!options.length) {
-    return {};
+    return { controllers: [] };
   }
   const [first, ...rest] = options;
-  const final: StFirebaseAppOptions = first ?? {};
-  const swaggerBuilders: Array<NonNullable<StFirebaseAppOptions['swagger']>> = [
-    final.swagger ?? {},
-  ];
+  const final: StFirebaseAppOptions = first ?? { controllers: [] };
+  const swaggerBuilders: HonoAppOptions<Hono>['swaggerDocumentBuilder'][] = [];
   for (const option of rest) {
     if (option.handlerOptions) {
       final.handlerOptions = Object.assign(
@@ -22,25 +22,22 @@ export function mergeAppOptions(
       final.secrets ??= [];
       final.secrets.push(...option.secrets);
     }
-    if (option.extraGlobalExceptions?.length) {
-      final.extraGlobalExceptions ??= [];
-      final.extraGlobalExceptions.push(...option.extraGlobalExceptions);
+    if (option.controllers.length) {
+      final.controllers.push(...option.controllers);
     }
-    if (option.swagger) {
-      swaggerBuilders.push(option.swagger);
+    if (option.providers?.length) {
+      final.providers ??= [];
+      final.providers.push(...option.providers);
+    }
+    // if (option.extraGlobalExceptions?.length) {
+    //   final.extraGlobalExceptions ??= [];
+    //   final.extraGlobalExceptions.push(...option.extraGlobalExceptions); TODO
+    // }
+    if (option.swaggerDocumentBuilder) {
+      swaggerBuilders.push(option.swaggerDocumentBuilder);
     }
   }
-  final.swagger = {
-    documentBuilder: (document) =>
-      swaggerBuilders.reduce(
-        (acc, item) => item.documentBuilder?.(acc) ?? acc,
-        document,
-      ),
-    documentFactory: (document) =>
-      swaggerBuilders.reduce(
-        (acc, item) => item.documentFactory?.(acc) ?? acc,
-        document,
-      ),
-  };
+  final.swaggerDocumentBuilder = (document) =>
+    swaggerBuilders.reduce((acc, item) => item?.(acc) ?? acc, document);
   return final;
 }

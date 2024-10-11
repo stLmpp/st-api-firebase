@@ -1,9 +1,9 @@
-import { INestApplicationContext } from '@nestjs/common';
 import {
   apiStateRunInContext,
   createCorrelationId,
   Exception,
   formatZodErrorString,
+  HonoApp,
   safeAsync,
 } from '@st-api/core';
 import {
@@ -30,6 +30,7 @@ import { Logger } from '../logger.js';
 
 import { CallableData } from './callable-data.schema.js';
 import { getHttpsErrorFromStatus } from './https-error-mapping.js';
+import { Hono } from 'hono';
 
 export type CallableHandlerFactoryOptions = CallableOptions;
 
@@ -73,7 +74,7 @@ export type CallableHandlerOptions<
 export class CallableHandlerFactory {
   constructor(
     private readonly options: CallableHandlerFactoryOptions,
-    private readonly getApp: () => Promise<INestApplicationContext>,
+    private readonly getApp: () => Promise<HonoApp<Hono>>,
     private readonly middleware: StFirebaseAppCallableMiddleware,
   ) {}
 
@@ -85,7 +86,7 @@ export class CallableHandlerFactory {
       | undefined;
     let handler: CallableHandle<RequestSchema, ResponseSchema>;
     const getSchema = async () => (schema ??= await options.schema());
-    const getHandle = async (app: INestApplicationContext) =>
+    const getHandle = async (app: HonoApp<Hono>) =>
       (handler ??= await this.getHandle(options, app));
     return onCall(
       {
@@ -186,13 +187,13 @@ export class CallableHandlerFactory {
     ResponseSchema extends ZodSchema,
   >(
     options: CallableHandlerOptions<RequestSchema, ResponseSchema>,
-    app: INestApplicationContext,
+    app: HonoApp<Hono>,
   ): Promise<CallableHandle<RequestSchema, ResponseSchema>> {
     if ('handle' in options) {
       return options.handle;
     }
     const [error, handler] = await safeAsync(() =>
-      app.resolve(options.handler),
+      app.injector.resolve(options.handler),
     );
     if (error) {
       Logger.error(

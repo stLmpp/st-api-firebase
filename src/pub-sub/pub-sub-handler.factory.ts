@@ -1,8 +1,8 @@
-import { INestApplicationContext } from '@nestjs/common';
 import {
   apiStateRunInContext,
   createCorrelationId,
   formatZodErrorString,
+  HonoApp,
   safeAsync,
 } from '@st-api/core';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
@@ -22,6 +22,7 @@ import { handleCloudEventError } from '../common/handle-cloud-event-error.js';
 import { APP_SYMBOL } from '../common/inject.js';
 import { PUB_SUB_BAD_REQUEST, PUB_SUB_INVALID_HANDLER } from '../exceptions.js';
 import { Logger } from '../logger.js';
+import { Hono } from 'hono';
 
 export type PubSubHandlerFactoryOptions = Omit<
   PubSubOptions,
@@ -66,15 +67,15 @@ interface HandleCloudEventOptions<
 > {
   event: CloudEvent<MessagePublishedData>;
   options: PubSubHandlerOptions<Topic, Schema>;
-  app: INestApplicationContext;
-  getHandle(): Promise<PubSubHandle<Schema>>;
-  getSchema(): Promise<Schema>;
+  app: HonoApp<Hono>;
+  getHandle(this: void): Promise<PubSubHandle<Schema>>;
+  getSchema(this: void): Promise<Schema>;
 }
 
 export class PubSubHandlerFactory {
   constructor(
     private readonly options: PubSubHandlerFactoryOptions,
-    private readonly getApp: () => Promise<INestApplicationContext>,
+    private readonly getApp: () => Promise<HonoApp<Hono>>,
     private readonly middleware: StFirebaseAppPubSubMiddleware,
   ) {}
 
@@ -177,13 +178,13 @@ export class PubSubHandlerFactory {
 
   private async getHandle<Schema extends ZodSchema, Topic extends string>(
     options: PubSubHandlerOptions<Topic, Schema>,
-    app: INestApplicationContext,
+    app: HonoApp<Hono>,
   ): Promise<PubSubHandle<Schema>> {
     if ('handle' in options) {
       return options.handle;
     }
     const [error, handler] = await safeAsync(() =>
-      app.resolve(options.handler),
+      app.injector.resolve(options.handler),
     );
     if (error) {
       Logger.error(

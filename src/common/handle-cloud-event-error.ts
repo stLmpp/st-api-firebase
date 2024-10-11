@@ -1,9 +1,9 @@
-import { INestApplicationContext, Logger } from '@nestjs/common';
 import {
   Exception,
   getCorrelationId,
   getExecutionId,
   getTraceId,
+  HonoApp,
   safe,
   safeAsync,
   UNKNOWN_INTERNAL_SERVER_ERROR,
@@ -16,12 +16,14 @@ import { FirebaseAdminFirestore } from '../firebase-admin/firebase-admin-firesto
 import { RETRY_EVENT_MAX_DIFF, RetryEvent } from '../retry-event.js';
 
 import { removeCircular } from './remove-circular.js';
+import { Logger } from '../logger.js';
+import { Hono } from 'hono';
 
 export interface HandleCloudEventErrorOptions {
   event?: CloudEvent<unknown>;
   eventTimestamp: string;
   error: Error;
-  app: INestApplicationContext;
+  app: HonoApp<Hono>;
   type: CloudEventType;
   data: unknown;
 }
@@ -96,7 +98,7 @@ export async function handleCloudEventError(
   const [errorFirestore] = await safeAsync(async () => {
     const isException = unparsedError instanceof Exception;
     const error = isException ? unparsedError : UNKNOWN_INTERNAL_SERVER_ERROR();
-    const firestore = app.get(FirebaseAdminFirestore);
+    const firestore = await app.injector.resolve(FirebaseAdminFirestore);
     const originalError = isException
       ? undefined
       : {

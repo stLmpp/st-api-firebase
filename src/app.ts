@@ -1,12 +1,6 @@
-import { INestApplication, INestApplicationContext } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import { configureApp } from '@st-api/core';
-import express, { Express } from 'express';
 import { CloudFunction as CloudFunctionV1 } from 'firebase-functions';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
 import { HttpsFunction, onRequest } from 'firebase-functions/v2/https';
-import { Class } from 'type-fest';
 import { ZodSchema } from 'zod';
 
 import {
@@ -28,7 +22,6 @@ import {
   CallableHandlerFactory,
   CallableHandlerOptions,
 } from './callable/callable-handler.factory.js';
-import { TRACE_ID_HEADER } from './common/constants.js';
 import { isEmulator } from './common/is-emulator.js';
 import { CustomEventHandlerFactory } from './custom-event/custom-event-handler.factory.js';
 import {
@@ -43,30 +36,26 @@ import {
   EventarcHandlerFactoryOptions,
   EventarcHandlerOptions,
 } from './eventarc/eventarc-handler.factory.js';
-import {
-  EVENTARC_PUBLISH_ERROR,
-  FUNCTION_CALL_INVALID_RESPONSE,
-  FUNCTION_CALL_UNKNOWN_ERROR,
-  PUB_SUB_PUBLISH_ERROR,
-} from './exceptions.js';
 import { Logger } from './logger.js';
-import { LoggerMiddleware } from './logger.middleware.js';
 import { mergeAppOptions } from './merge-app-options.js';
 import {
   PubSubHandlerFactory,
   PubSubHandlerFactoryOptions,
   PubSubHandlerOptions,
 } from './pub-sub/pub-sub-handler.factory.js';
+import { createHonoApp, HonoApp } from '@st-api/core';
+import { Hono } from 'hono';
+import { logger } from 'hono/logger';
+import { getRequestListener } from '@hono/node-server';
+import { PubSub as GooglePubSub } from '@google-cloud/pubsub/build/src/pubsub.js';
+import { PubSub } from './pub-sub/pub-sub.service.js';
 
 export class StFirebaseApp {
-  private constructor(
-    private readonly appModule: Class<any>,
-    options?: StFirebaseAppOptions,
-  ) {
-    this.adapter = options?.adapter ?? new StFirebaseAppDefaultAdapter();
+  private constructor(options: StFirebaseAppOptions) {
+    this.adapter = options.adapter ?? new StFirebaseAppDefaultAdapter();
     const newOptions = mergeAppOptions(
-      options ?? {},
-      this.adapter.options ?? {},
+      options,
+      this.adapter.options ?? { controllers: [] },
     );
     this.options = {
       retry: false,
@@ -98,30 +87,27 @@ export class StFirebaseApp {
     };
     this.eventarcHandlerFactory = new EventarcHandlerFactory(
       commonOptions,
-      () => this.getAppContext(),
+      () => this.getApp(),
       this.adapter.eventarcMiddleware.bind(this.adapter),
     );
     this.pubSubHandlerFactory = new PubSubHandlerFactory(
       commonOptions,
-      () => this.getAppContext(),
+      () => this.getApp(),
       this.adapter.pubSubMiddleware.bind(this.adapter),
     );
     this.callableHandlerFactory = new CallableHandlerFactory(
       commonOptions,
-      () => this.getAppContext(),
+      () => this.getApp(),
       this.adapter.callableMiddleware.bind(this.adapter),
     );
     this.customEventHandlerFactory = new CustomEventHandlerFactory(
       this.options,
-      () => this.getAppContext(),
+      () => this.getApp(),
     );
   }
 
-  static create(
-    appModule: Class<any>,
-    options?: StFirebaseAppOptions,
-  ): StFirebaseApp {
-    return new StFirebaseApp(appModule, options);
+  static create(options: StFirebaseAppOptions): StFirebaseApp {
+    return new StFirebaseApp(options);
   }
 
   private readonly options: StFirebaseAppOptionsExtended;
@@ -134,8 +120,8 @@ export class StFirebaseApp {
   private readonly callables: Record<string, CallableFunction> = {};
   private readonly adapter: StFirebaseAppAdapter;
   private readonly namingStrategy: StFirebaseAppNamingStrategy;
-  private apps: [INestApplication, Express] | undefined;
-  private appContext: INestApplicationContext | undefined;
+  private app: HonoApp<Hono> | undefined;
+  private requestListener: ReturnType<typeof getRequestListener> | undefined;
   private hasHttpHandler = false;
 
   withHttpHandler(): this {
@@ -160,7 +146,7 @@ export class StFirebaseApp {
         ...options,
       },
       async (request, response) => {
-        const [, app] = await this.getApp();
+        const app = await this.getRequestListener();
         return app(request, response);
       },
     );
@@ -213,69 +199,79 @@ export class StFirebaseApp {
     return this;
   }
 
-  async getApp(): Promise<[nest: INestApplication, express: Express]> {
-    if (this.apps) {
-      return this.apps;
+  async getRequestListener() {
+    if (this.requestListener) {
+      return this.requestListener;
     }
-    const expressApp = express();
-    const app = configureApp(
-      await NestFactory.create(this.appModule, new ExpressAdapter(expressApp), {
-        logger: this.logger,
-      }),
-      {
-        swagger: {
-          documentBuilder: this.options?.swagger?.documentBuilder,
-          documentFactory: this.options?.swagger?.documentFactory,
-          options: {
-            swaggerOptions: {
-              requestInterceptor: (request: unknown) =>
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
-                __request__interceptor(request),
-            },
-            customJsStr: `
-window.__request__interceptor = (request) => {
-  const url = new URL(request.url);
-  const endPoint = url.pathname;
-  const origin = location.origin;
-  const path = location.pathname.replace(/\\/help$/, '');
-  let newUrl = origin + path + endPoint
-  if (url.searchParams.size) {
-    newUrl += '?' + url.searchParams.toString();
-  }
-  request.url = newUrl;
-  return request;
-}`,
-          },
-        },
-        getTraceId: (request) => {
-          const traceId =
-            request.get(TRACE_ID_HEADER) ||
-            request.get(TRACE_ID_HEADER.toLowerCase());
-          if (!traceId) {
-            return;
-          }
-          return traceId.split('/').at(0);
-        },
-        extraGlobalExceptions: [
-          ...(this.options?.extraGlobalExceptions ?? []),
-          PUB_SUB_PUBLISH_ERROR,
-          EVENTARC_PUBLISH_ERROR,
-          FUNCTION_CALL_UNKNOWN_ERROR,
-          FUNCTION_CALL_INVALID_RESPONSE,
-        ],
-      },
-    );
-    const loggerMiddleware = new LoggerMiddleware();
-    app.use(loggerMiddleware.use.bind(loggerMiddleware));
-    await app.init();
-    return (this.apps = [app, expressApp]);
+    const app = await this.getApp();
+    this.requestListener = getRequestListener(app.hono.fetch);
+    return this.requestListener;
   }
 
-  async getAppContext(): Promise<INestApplicationContext> {
-    return (this.appContext ??= await NestFactory.createApplicationContext(
-      this.appModule,
-      { logger: this.logger },
-    ));
+  async getApp(): Promise<HonoApp<Hono>> {
+    if (this.app) {
+      return this.app;
+    }
+    const hono = new Hono().use(
+      logger((...args) => {
+        this.logger.log(...args);
+      }),
+    );
+    const app = await createHonoApp({
+      hono,
+      controllers: this.options.controllers,
+      swaggerDocumentBuilder: this.options.swaggerDocumentBuilder,
+      providers: this.options.providers,
+      name: 'TODO', // TODO
+    });
+    //     const app = configureApp(
+    //       await NestFactory.create(this.appModule, new ExpressAdapter(expressApp), {
+    //         logger: this.logger,
+    //       }),
+    //       {
+    //         swagger: {
+    //           documentBuilder: this.options?.swagger?.documentBuilder,
+    //           documentFactory: this.options?.swagger?.documentFactory,
+    //           options: {
+    //             swaggerOptions: {
+    //               requestInterceptor: (request: unknown) =>
+    //                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //                 // @ts-expect-error
+    //                 __request__interceptor(request),
+    //             },
+    //             customJsStr: `
+    // window.__request__interceptor = (request) => {
+    //   const url = new URL(request.url);
+    //   const endPoint = url.pathname;
+    //   const origin = location.origin;
+    //   const path = location.pathname.replace(/\\/help$/, '');
+    //   let newUrl = origin + path + endPoint
+    //   if (url.searchParams.size) {
+    //     newUrl += '?' + url.searchParams.toString();
+    //   }
+    //   request.url = newUrl;
+    //   return request;
+    // }`,
+    //           },
+    //         },
+    //         getTraceId: (request) => { TODO getTraceId
+    //           const traceId =
+    //             request.get(TRACE_ID_HEADER) ||
+    //             request.get(TRACE_ID_HEADER.toLowerCase());
+    //           if (!traceId) {
+    //             return;
+    //           }
+    //           return traceId.split('/').at(0);
+    //         },
+    //         extraGlobalExceptions: [ TODO global exceptions
+    //           ...(this.options?.extraGlobalExceptions ?? []),
+    //           PUB_SUB_PUBLISH_ERROR,
+    //           EVENTARC_PUBLISH_ERROR,
+    //           FUNCTION_CALL_UNKNOWN_ERROR,
+    //           FUNCTION_CALL_INVALID_RESPONSE,
+    //         ],
+    //       },
+    //     );
+    return (this.app = app);
   }
 }

@@ -1,5 +1,4 @@
-import { INestApplicationContext } from '@nestjs/common';
-import { apiStateRunInContext, safeAsync } from '@st-api/core';
+import { apiStateRunInContext, HonoApp, safeAsync } from '@st-api/core';
 import { CloudFunction as CloudFunctionV1 } from 'firebase-functions';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
 
@@ -10,11 +9,12 @@ import {
 import { CloudEventType } from '../cloud-event-type.enum.js';
 import { handleCloudEventError } from '../common/handle-cloud-event-error.js';
 import { APP_SYMBOL } from '../common/inject.js';
+import { Hono } from 'hono';
 
 export class CustomEventHandlerFactory {
   constructor(
     private readonly options: StFirebaseAppOptionsExtended,
-    private readonly getApp: () => Promise<INestApplicationContext>,
+    private readonly getApp: () => Promise<HonoApp<Hono>>,
   ) {}
 
   create(

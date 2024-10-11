@@ -1,5 +1,4 @@
 import { PubSub as GooglePubSub, type Topic } from '@google-cloud/pubsub';
-import { Injectable } from '@nestjs/common';
 import {
   getCorrelationId,
   getExecutionId,
@@ -15,6 +14,7 @@ import {
 import { isEmulator } from '../common/is-emulator.js';
 import { PUB_SUB_PUBLISH_ERROR } from '../exceptions.js';
 import { Logger } from '../logger.js';
+import { Injectable } from '@stlmpp/di';
 
 @Injectable()
 export class PubSub {

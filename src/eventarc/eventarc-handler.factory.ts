@@ -1,8 +1,8 @@
-import { INestApplicationContext } from '@nestjs/common';
 import {
   apiStateRunInContext,
   createCorrelationId,
   formatZodErrorString,
+  HonoApp,
   safeAsync,
 } from '@st-api/core';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
@@ -26,6 +26,7 @@ import {
 import { Logger } from '../logger.js';
 
 import { EventarcData } from './eventarc-data.schema.js';
+import { Hono } from 'hono';
 
 export type EventarcHandle<Schema extends ZodSchema> = (
   event: z.infer<Schema>,
@@ -63,15 +64,15 @@ interface HandleCloudEventOptions<
 > {
   event: CloudEvent<unknown>;
   options: EventarcHandlerOptions<EventType, Schema>;
-  app: INestApplicationContext;
-  getHandle(): Promise<EventarcHandle<Schema>>;
-  getSchema(): Promise<Schema>;
+  app: HonoApp<Hono>;
+  getHandle(this: void): Promise<EventarcHandle<Schema>>;
+  getSchema(this: void): Promise<Schema>;
 }
 
 export class EventarcHandlerFactory {
   constructor(
     private readonly options: EventarcHandlerFactoryOptions,
-    private readonly getApp: () => Promise<INestApplicationContext>,
+    private readonly getApp: () => Promise<HonoApp<Hono>>,
     private readonly middleware: StFirebaseAppEventarcMiddleware,
   ) {}
 
@@ -178,13 +179,13 @@ export class EventarcHandlerFactory {
 
   private async getHandle<Schema extends ZodSchema, EventType extends string>(
     options: EventarcHandlerOptions<EventType, Schema>,
-    app: INestApplicationContext,
+    app: HonoApp<Hono>,
   ): Promise<EventarcHandle<Schema>> {
     if ('handle' in options) {
       return options.handle;
     }
     const [error, handler] = await safeAsync(() =>
-      app.resolve(options.handler),
+      app.injector.resolve(options.handler),
     );
     if (error) {
       Logger.error(
