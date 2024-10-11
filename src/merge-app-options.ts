@@ -29,10 +29,10 @@ export function mergeAppOptions(
       final.providers ??= [];
       final.providers.push(...option.providers);
     }
-    // if (option.extraGlobalExceptions?.length) {
-    //   final.extraGlobalExceptions ??= [];
-    //   final.extraGlobalExceptions.push(...option.extraGlobalExceptions); TODO
-    // }
+    if (option.extraGlobalExceptions?.length) {
+      final.extraGlobalExceptions ??= [];
+      final.extraGlobalExceptions.push(...option.extraGlobalExceptions);
+    }
     if (option.swaggerDocumentBuilder) {
       swaggerBuilders.push(option.swaggerDocumentBuilder);
     }

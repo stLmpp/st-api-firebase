@@ -18,7 +18,6 @@ export interface StFirebaseAppOptions
   extends Omit<HonoAppOptions<Hono>, 'hono' | 'name'> {
   adapter?: StFirebaseAppAdapter;
   secrets?: HttpsOptions['secrets'];
-  // extraGlobalExceptions?: ConfigureAppOptions['extraGlobalExceptions']; TODO
   handlerOptions?: StFirebaseAppHandlerOptions;
   namingStrategy?: StFirebaseAppNamingStrategy;
 }

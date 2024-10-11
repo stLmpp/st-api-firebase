@@ -8,9 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@hono/node-server':
+        specifier: ~1.13.2
+        version: 1.13.2(hono@4.6.4)
+      '@hono/swagger-ui':
+        specifier: ~0.4.1
+        version: 0.4.1(hono@4.6.4)
       dayjs:
         specifier: ~1.11.13
         version: 1.11.13
+      hono:
+        specifier: ~4.6.4
+        version: 4.6.4
       http-status-codes:
         specifier: ~2.3.0
         version: 2.3.0
@@ -24,20 +33,14 @@ importers:
       '@google-cloud/pubsub':
         specifier: ~4.7.2
         version: 4.7.2
-      '@hono/node-server':
-        specifier: ^1.13.2
-        version: 1.13.2(hono@4.6.4)
-      '@hono/swagger-ui':
-        specifier: ^0.4.1
-        version: 0.4.1(hono@4.6.4)
       '@st-api/config':
         specifier: ~2.0.0
         version: 2.0.0(@eslint/js@9.12.0)(eslint-plugin-unicorn@56.0.0(eslint@9.12.0))(eslint@9.12.0)(globals@15.11.0)(tsup@8.3.0(@swc/core@1.7.35)(postcss@8.4.47)(typescript@5.6.3)(yaml@2.5.1))(typescript-eslint@8.8.1(eslint@9.12.0)(typescript@5.6.3))(unplugin-swc@1.5.1(@swc/core@1.7.35)(rollup@4.24.0)(webpack-sources@3.2.3))(vitest@2.1.2(@types/node@20.14.8)(@vitest/ui@2.1.2))
       '@st-api/core':
-        specifier: 6.0.0-beta.1
-        version: 6.0.0-beta.1(@hono/swagger-ui@0.4.1(hono@4.6.4))(@st-api/zod-openapi@0.1.0(openapi3-ts@4.4.0)(zod@3.23.8))(@stlmpp/di@0.4.0(reflect-metadata@0.2.2))(hono@4.6.4)(reflect-metadata@0.2.2)(zod@3.23.8)
+        specifier: ~6.0.0-beta.2
+        version: 6.0.0-beta.2(@hono/swagger-ui@0.4.1(hono@4.6.4))(@st-api/zod-openapi@0.1.0(openapi3-ts@4.4.0)(zod@3.23.8))(@stlmpp/di@0.4.0(reflect-metadata@0.2.2))(hono@4.6.4)(reflect-metadata@0.2.2)(zod@3.23.8)
       '@stlmpp/di':
-        specifier: ^0.4.0
+        specifier: ~0.4.0
         version: 0.4.0(reflect-metadata@0.2.2)
       '@swc/core':
         specifier: ~1.7.35
@@ -66,9 +69,6 @@ importers:
       firebase-functions:
         specifier: ~6.0.1
         version: 6.0.1(firebase-admin@12.6.0)
-      hono:
-        specifier: ^4.6.4
-        version: 4.6.4
       prettier:
         specifier: ~3.3.3
         version: 3.3.3
@@ -896,8 +896,8 @@ packages:
       unplugin-swc: ^1.5.1
       vitest: ^2.1.2
 
-  '@st-api/core@6.0.0-beta.1':
-    resolution: {integrity: sha512-1I6+Lygw8nbxBVBvQ+zQZEjl21i3ClX9+W6vlmTEJJANgrnev8A6lg8fWF92IWbAyVN9hcq20/rD9pvRRXSNuQ==}
+  '@st-api/core@6.0.0-beta.2':
+    resolution: {integrity: sha512-DISveC4opnwlNlL8hjO009H0/oD80lPcEegyJp9Ex9A7QBFG8BKqx2qbYtgVCqzbg3H1VsQmRoa2JTX3rkzsIA==}
     engines: {node: '20', pnpm: ^9.0.0}
     peerDependencies:
       '@hono/swagger-ui': ^0.4.1
@@ -3685,7 +3685,7 @@ snapshots:
       unplugin-swc: 1.5.1(@swc/core@1.7.35)(rollup@4.24.0)(webpack-sources@3.2.3)
       vitest: 2.1.2(@types/node@20.14.8)(@vitest/ui@2.1.2)
 
-  '@st-api/core@6.0.0-beta.1(@hono/swagger-ui@0.4.1(hono@4.6.4))(@st-api/zod-openapi@0.1.0(openapi3-ts@4.4.0)(zod@3.23.8))(@stlmpp/di@0.4.0(reflect-metadata@0.2.2))(hono@4.6.4)(reflect-metadata@0.2.2)(zod@3.23.8)':
+  '@st-api/core@6.0.0-beta.2(@hono/swagger-ui@0.4.1(hono@4.6.4))(@st-api/zod-openapi@0.1.0(openapi3-ts@4.4.0)(zod@3.23.8))(@stlmpp/di@0.4.0(reflect-metadata@0.2.2))(hono@4.6.4)(reflect-metadata@0.2.2)(zod@3.23.8)':
     dependencies:
       '@hono/swagger-ui': 0.4.1(hono@4.6.4)
       '@st-api/zod-openapi': 0.1.0(openapi3-ts@4.4.0)(zod@3.23.8)
