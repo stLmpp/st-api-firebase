@@ -10,8 +10,12 @@ import { FirebaseApp } from './firebase-app.js';
 import { FirebaseAuth } from './firebase-auth.js';
 import { FirebaseFunctions } from './firebase-functions.js';
 import { getFirebaseJson } from './get-firebase-json.js';
+import { FactoryProvider, Provider } from '@stlmpp/di';
+import { Class } from 'type-fest';
 
-export function provideFirebase(options?: FirebaseOptions) {
+export function provideFirebase(
+  options?: FirebaseOptions,
+): Array<Provider | Class<any>> {
   return [
     FirebaseFunctions,
     {
@@ -52,9 +56,9 @@ export function provideFirebase(options?: FirebaseOptions) {
         return app;
       },
     },
-    {
-      provide: FirebaseAuth,
-      useFactory: (app: FirebaseApp) => {
+    new FactoryProvider(
+      FirebaseAuth,
+      (app) => {
         const auth = getAuth(app);
         if (isEmulator()) {
           const firebaseJson = getFirebaseJson();
@@ -67,7 +71,7 @@ export function provideFirebase(options?: FirebaseOptions) {
         }
         return auth;
       },
-      inject: [FirebaseApp],
-    },
+      [FirebaseApp],
+    ),
   ];
 }

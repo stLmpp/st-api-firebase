@@ -10,18 +10,18 @@ import { FirebaseAdminAuth } from './firebase-admin-auth.js';
 import { FirebaseAdminEventarc } from './firebase-admin-eventarc.js';
 import { FirebaseAdminFirestore } from './firebase-admin-firestore.js';
 import { Logger } from '../logger.js';
+import { FactoryProvider, Provider } from '@stlmpp/di';
+import { Class } from 'type-fest';
 
-export function provideFirebaseAdmin() {
+export function provideFirebaseAdmin(): Array<Provider | Class<any>> {
   return [
     { provide: FirebaseAdminApp, useFactory: () => initializeApp() },
-    {
-      provide: FirebaseAdminAuth,
-      useFactory: (app: FirebaseAdminApp) => getAuth(app),
-      inject: [FirebaseAdminApp],
-    },
-    {
-      provide: FirebaseAdminFirestore,
-      useFactory: (app: FirebaseAdminApp) => {
+    new FactoryProvider(FirebaseAdminAuth, (app) => getAuth(app), [
+      FirebaseAdminApp,
+    ]),
+    new FactoryProvider(
+      FirebaseAdminFirestore,
+      (app) => {
         const firestore = getFirestore(app);
         try {
           firestore.settings({ ignoreUndefinedProperties: true });
@@ -31,13 +31,11 @@ export function provideFirebaseAdmin() {
         }
         return firestore;
       },
-      inject: [FirebaseAdminApp],
-    },
-    {
-      provide: FirebaseAdminEventarc,
-      useFactory: (app: FirebaseAdminApp) => getEventarc(app),
-      inject: [FirebaseAdminApp],
-    },
+      [FirebaseAdminApp],
+    ),
+    new FactoryProvider(FirebaseAdminEventarc, (app) => getEventarc(app), [
+      FirebaseAdminApp,
+    ]),
     Eventarc,
   ];
 }
