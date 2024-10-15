@@ -1,4 +1,3 @@
-import { Inject, Injectable } from '@nestjs/common';
 import {
   coerceArray,
   getCorrelationId,
@@ -14,6 +13,7 @@ import { FirebaseAdminEventarc } from '../firebase-admin/firebase-admin-eventarc
 import { Logger } from '../logger.js';
 
 import { EventarcData } from './eventarc-data.schema.js';
+import { Inject, Injectable } from '@stlmpp/di';
 
 export interface EventarcPublishOptions {
   type: string;
@@ -21,7 +21,7 @@ export interface EventarcPublishOptions {
   attributes?: Record<string, unknown>;
 }
 
-@Injectable()
+@Injectable({ root: true })
 export class Eventarc {
   constructor(
     private readonly firebaseAdminEventarc: FirebaseAdminEventarc,

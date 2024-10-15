@@ -1,5 +1,4 @@
-import { INestApplicationContext } from '@nestjs/common';
-import { ApiState, ConfigureAppOptions } from '@st-api/core';
+import { ApiState, HonoApp, HonoAppOptions } from '@st-api/core';
 import { CloudFunction as CloudFunctionV1 } from 'firebase-functions';
 import { Expression } from 'firebase-functions/params';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
@@ -8,20 +7,17 @@ import { SetRequired } from 'type-fest';
 
 import { StFirebaseAppNamingStrategy } from './app-naming-strategy.js';
 import { StFirebaseAppAdapter } from './app.adapter.js';
+import { Hono } from 'hono';
 
 export type StFirebaseAppRecord = Record<
   string,
   CloudFunction<CloudEvent<unknown>> | CloudFunctionV1<any>
 >;
 
-export interface StFirebaseAppOptions {
+export interface StFirebaseAppOptions
+  extends Omit<HonoAppOptions<Hono>, 'hono' | 'name'> {
   adapter?: StFirebaseAppAdapter;
   secrets?: HttpsOptions['secrets'];
-  swagger?: Pick<
-    NonNullable<ConfigureAppOptions['swagger']>,
-    'documentBuilder' | 'documentFactory'
-  >;
-  extraGlobalExceptions?: ConfigureAppOptions['extraGlobalExceptions'];
   handlerOptions?: StFirebaseAppHandlerOptions;
   namingStrategy?: StFirebaseAppNamingStrategy;
 }
@@ -51,7 +47,7 @@ export interface StFirebaseAppCustomEventRunInContextOptions {
   state?: Partial<ApiState> & { metadata?: Record<string | symbol, unknown> };
   eventTimestamp: string;
   eventData: unknown;
-  run: (app: INestApplicationContext) => Promise<unknown>;
+  run: (app: HonoApp<Hono>) => Promise<unknown>;
 }
 
 export interface StFirebaseAppCustomEventContext {
