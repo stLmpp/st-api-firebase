@@ -38,10 +38,13 @@ export const CALLABLE_INVALID_HANDLER = exception({
 export const FUNCTION_CALL_UNKNOWN_ERROR = exception({
   status: StatusCodes.INTERNAL_SERVER_ERROR,
   errorCode: 'FIREBASE-0009',
+  message: 'An unknown error occurred while trying to call a function',
 });
 export const FUNCTION_CALL_INVALID_RESPONSE = exception({
   status: StatusCodes.INTERNAL_SERVER_ERROR,
   errorCode: 'FIREBASE-0010',
+  message:
+    'Our server replied with the wrong response (function call). Please contact the support.',
 });
 export const CALLABLE_BAD_FORMAT = exception({
   status: StatusCodes.BAD_REQUEST,
@@ -60,4 +63,5 @@ export const CALLABLE_BAD_RESPONSE = exception({
 export const CALLABLE_UNKNOWN_ERROR = exception({
   status: StatusCodes.INTERNAL_SERVER_ERROR,
   errorCode: 'FIREBASE-0014',
+  message: 'An unknown error occurred while trying to handle a callable',
 });

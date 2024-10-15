@@ -190,7 +190,7 @@ export class EventarcHandlerFactory {
     if (error) {
       Logger.error(
         `[Eventarc] Could not find instance of ${options.handler.name}, ` +
-          `make sure it is registered in the module providers`,
+          `make sure it is registered in the providers`,
         error,
       );
       throw EVENTARC_INVALID_HANDLER(error.message);

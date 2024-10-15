@@ -189,7 +189,7 @@ export class PubSubHandlerFactory {
     if (error) {
       Logger.error(
         `[PubSub] Could not find instance of ${options.handler.name}, ` +
-          `make sure it is registered in the module providers`,
+          `make sure it is registered in the providers`,
         error,
       );
       throw PUB_SUB_INVALID_HANDLER(error.message);
