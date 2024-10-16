@@ -50,6 +50,7 @@ export type EventarcHandlerOptions<
   | 'eventFilterPathPatterns'
   | 'retry'
   | 'preserveExternalChanges'
+  | 'region'
 > &
   EventarcHandlers<Schema>;
 

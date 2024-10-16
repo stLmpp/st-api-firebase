@@ -89,6 +89,7 @@ export class StFirebaseApp {
       secrets: this.options.secrets,
       memory: this.options.memory,
       minInstances: this.options.minInstances,
+      region: this.options.region,
     };
     this.eventarcHandlerFactory = new EventarcHandlerFactory(
       commonOptions,
@@ -148,6 +149,7 @@ export class StFirebaseApp {
         cpu: this.options.cpu,
         preserveExternalChanges: this.options.preserveExternalChanges,
         omit: !this.hasHttpHandler && !isEmulator(),
+        region: this.options.region,
         ...options,
       },
       async (request, response) => {

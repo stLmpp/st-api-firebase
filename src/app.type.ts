@@ -1,7 +1,11 @@
 import { ApiState, HonoApp, HonoAppOptions } from '@st-api/core';
 import { CloudFunction as CloudFunctionV1 } from 'firebase-functions';
 import { Expression } from 'firebase-functions/params';
-import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
+import {
+  CloudEvent,
+  CloudFunction,
+  SupportedRegion,
+} from 'firebase-functions/v2';
 import { HttpsOptions } from 'firebase-functions/v2/https';
 import { SetRequired } from 'type-fest';
 
@@ -25,10 +29,12 @@ export interface StFirebaseAppOptions
 export interface StFirebaseAppHandlerOptions {
   preserveExternalChanges?: boolean;
   retry?: boolean;
+  region?: SupportedRegion;
 }
 
 export interface StFirebaseAppHttpOptions {
   preserveExternalChanges?: boolean;
+  region?: SupportedRegion;
 }
 
 export interface StFirebaseAppOptionsExtended
@@ -41,6 +47,7 @@ export interface StFirebaseAppOptionsExtended
   maxInstances: number | Expression<number>;
   memory: Expression<number>;
   minInstances: number | Expression<number>;
+  region?: SupportedRegion;
 }
 
 export interface StFirebaseAppCustomEventRunInContextOptions {

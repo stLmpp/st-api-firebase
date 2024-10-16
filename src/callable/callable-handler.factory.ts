@@ -68,7 +68,7 @@ export type CallableHandlerOptions<
   schema: () =>
     | Promise<CallableHandlerSchema<RequestSchema, ResponseSchema>>
     | CallableHandlerSchema<RequestSchema, ResponseSchema>;
-} & Pick<CallableOptions, 'preserveExternalChanges'> &
+} & Pick<CallableOptions, 'preserveExternalChanges' | 'region'> &
   CallableHandlers<RequestSchema, ResponseSchema>;
 
 export class CallableHandlerFactory {

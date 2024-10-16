@@ -58,6 +58,7 @@ export type PubSubHandlerOptions<
   | 'preserveExternalChanges'
   | 'eventFilterPathPatterns'
   | 'eventFilters'
+  | 'region'
 > &
   PubSubHandlers<Schema>;
 
