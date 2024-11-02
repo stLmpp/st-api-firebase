@@ -10,7 +10,12 @@ export function mergeAppOptions(
   }
   const [first, ...rest] = options;
   const final: StFirebaseAppOptions = first ?? { controllers: [] };
-  const swaggerBuilders: HonoAppOptions<Hono>['swaggerDocumentBuilder'][] = [];
+  const swaggerBuilders: NonNullable<
+    HonoAppOptions<Hono>['swaggerDocumentBuilder']
+  >[] = [];
+  if (first?.swaggerDocumentBuilder) {
+    swaggerBuilders.push(first.swaggerDocumentBuilder);
+  }
   for (const option of rest) {
     if (option.handlerOptions) {
       final.handlerOptions = Object.assign(
@@ -38,6 +43,6 @@ export function mergeAppOptions(
     }
   }
   final.swaggerDocumentBuilder = (document) =>
-    swaggerBuilders.reduce((acc, item) => item?.(acc) ?? acc, document);
+    swaggerBuilders.reduce((acc, item) => item(acc), document);
   return final;
 }
