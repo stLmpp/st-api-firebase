@@ -1,5 +1,5 @@
 import { apiStateRunInContext, HonoApp, safeAsync } from '@st-api/core';
-import { CloudFunction as CloudFunctionV1 } from 'firebase-functions';
+import { CloudFunction as CloudFunctionV1 } from 'firebase-functions/v1';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
 
 import {

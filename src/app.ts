@@ -1,4 +1,4 @@
-import { CloudFunction as CloudFunctionV1 } from 'firebase-functions';
+import { CloudFunction as CloudFunctionV1 } from 'firebase-functions/v1';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
 import { HttpsFunction, onRequest } from 'firebase-functions/v2/https';
 import { ZodSchema } from 'zod';

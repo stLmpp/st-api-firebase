@@ -1,5 +1,5 @@
 import { ApiState, HonoApp, HonoAppOptions } from '@st-api/core';
-import { CloudFunction as CloudFunctionV1 } from 'firebase-functions';
+import { CloudFunction as CloudFunctionV1 } from 'firebase-functions/v1';
 import { Expression } from 'firebase-functions/params';
 import {
   CloudEvent,
