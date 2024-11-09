@@ -93,6 +93,7 @@ export class EventarcHandlerFactory {
           options.preserveExternalChanges ??
           this.options.preserveExternalChanges,
         retry: options.retry ?? this.options.retry,
+        region: options.region ?? this.options.region,
       },
       async (event) => {
         const app = await this.getApp();

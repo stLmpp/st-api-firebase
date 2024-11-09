@@ -96,6 +96,7 @@ export class PubSubHandlerFactory {
           this.options.preserveExternalChanges,
         eventFilterPathPatterns: options.eventFilterPathPatterns,
         eventFilters: options.eventFilterPathPatterns,
+        region: options.region ?? this.options.region,
       },
       async (event) => {
         const app = await this.getApp();
