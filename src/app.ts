@@ -46,7 +46,6 @@ import {
 import { createHonoApp, HonoApp } from '@st-api/core';
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
-import { getRequestListener } from '@hono/node-server';
 import { TRACE_ID_HEADER } from './common/constants.js';
 import {
   EVENTARC_PUBLISH_ERROR,
@@ -54,6 +53,7 @@ import {
   FUNCTION_CALL_UNKNOWN_ERROR,
   PUB_SUB_PUBLISH_ERROR,
 } from './exceptions.js';
+import { createServerAdapter } from '@whatwg-node/server';
 
 export class StFirebaseApp {
   private constructor(options: StFirebaseAppOptions) {
@@ -127,7 +127,7 @@ export class StFirebaseApp {
   private readonly adapter: StFirebaseAppAdapter;
   private readonly namingStrategy: StFirebaseAppNamingStrategy;
   private app: HonoApp<Hono> | undefined;
-  private requestListener: ReturnType<typeof getRequestListener> | undefined;
+  private requestListener: ReturnType<typeof createServerAdapter> | undefined;
   private hasHttpHandler = false;
 
   withHttpHandler(): this {
@@ -153,7 +153,7 @@ export class StFirebaseApp {
         ...options,
       },
       async (request, response) => {
-        const app = await this.getRequestListener();
+        const app = await this.getHonoHttpHandler();
         return app(request, response);
       },
     );
@@ -206,12 +206,12 @@ export class StFirebaseApp {
     return this;
   }
 
-  async getRequestListener() {
+  async getHonoHttpHandler() {
     if (this.requestListener) {
       return this.requestListener;
     }
     const app = await this.getApp();
-    this.requestListener = getRequestListener(app.hono.fetch);
+    this.requestListener = createServerAdapter(app.hono.fetch);
     return this.requestListener;
   }
 

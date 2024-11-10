@@ -1,6 +1,6 @@
 {
   "name": "@st-api/firebase",
-  "version": "6.1.4",
+  "version": "6.1.5",
   "description": "",
   "homepage": "https://github.com/stLmpp/st-api-firebase#readme",
   "bugs": {
@@ -39,6 +39,7 @@
   "dependencies": {
     "@hono/node-server": "~1.13.4",
     "@hono/swagger-ui": "~0.4.1",
+    "@whatwg-node/server": "~0.9.53",
     "dayjs": "~1.11.13",
     "hono": "~4.6.8",
     "http-status-codes": "~2.3.0",
