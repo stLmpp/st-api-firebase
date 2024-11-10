@@ -45,7 +45,6 @@ import {
 } from './pub-sub/pub-sub-handler.factory.js';
 import { createHonoApp, HonoApp } from '@st-api/core';
 import { Hono } from 'hono';
-import { logger } from 'hono/logger';
 import { TRACE_ID_HEADER } from './common/constants.js';
 import {
   EVENTARC_PUBLISH_ERROR,
@@ -54,6 +53,7 @@ import {
   PUB_SUB_PUBLISH_ERROR,
 } from './exceptions.js';
 import { createServerAdapter } from '@whatwg-node/server';
+import { loggerMiddleware } from './logger.middleware.js';
 
 export class StFirebaseApp {
   private constructor(options: StFirebaseAppOptions) {
@@ -219,11 +219,7 @@ export class StFirebaseApp {
     if (this.app) {
       return this.app;
     }
-    const hono = new Hono().use(
-      logger((...args) => {
-        this.logger.log(...args);
-      }),
-    );
+    const hono = new Hono().use(loggerMiddleware(this.logger));
     const app = await createHonoApp({
       hono,
       controllers: this.options.controllers,
