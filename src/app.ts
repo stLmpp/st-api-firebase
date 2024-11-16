@@ -43,7 +43,7 @@ import {
   PubSubHandlerFactoryOptions,
   PubSubHandlerOptions,
 } from './pub-sub/pub-sub-handler.factory.js';
-import { createHonoApp, HonoApp, safeAsync } from '@st-api/core';
+import { createHonoApp, HonoApp } from '@st-api/core';
 import { Hono } from 'hono';
 import { TRACE_ID_HEADER } from './common/constants.js';
 import {
@@ -53,7 +53,7 @@ import {
   PUB_SUB_PUBLISH_ERROR,
 } from './exceptions.js';
 import { loggerMiddleware } from './logger.middleware.js';
-import { Readable } from 'node:stream';
+import { expressToHonoAdapter } from './express-to-hono.adapter.js';
 
 export class StFirebaseApp {
   private constructor(options: StFirebaseAppOptions) {
@@ -153,53 +153,7 @@ export class StFirebaseApp {
       },
       async (req, res) => {
         const app = await this.getApp();
-        // Workaround for https://github.com/honojs/hono/issues/1695
-        const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
-        const headers = new Headers();
-        for (const [key, value] of Object.entries(req.headers)) {
-          if (value === undefined) {
-            continue;
-          }
-          headers.set(key, Array.isArray(value) ? value.join(',') : value);
-        }
-        const fetchRequest = new Request(url, {
-          method: req.method,
-          headers,
-          body:
-            req.method !== 'GET' && req.method !== 'HEAD' ? req.rawBody : null,
-        });
-        const [error, fetchResponse] = await safeAsync(async () =>
-          app.hono.fetch(fetchRequest),
-        );
-        if (error) {
-          this.logger.error(
-            'Error while trying to pass the request from express to Hono',
-            error,
-          );
-          res.status(500).send(error.message);
-          return;
-        }
-        for (const [key, value] of fetchResponse.headers) {
-          res.setHeader(key, value);
-        }
-        res.status(fetchResponse.status);
-        if (fetchResponse.body) {
-          const reader = fetchResponse.body.getReader();
-          const stream = new Readable({
-            read() {
-              reader
-                .read()
-                .then(({ done, value }) => {
-                  this.push(done ? null : value);
-                })
-                .catch((streamError) => {
-                  this.emit('error', streamError);
-                });
-            },
-          });
-          stream.pipe(res);
-        }
-        // End workaround
+        await expressToHonoAdapter(app.hono, req, res);
       },
     );
   }
