@@ -1,7 +1,6 @@
 import type { Hono } from 'hono';
 import type { onRequest } from 'firebase-functions/v2/https';
 import { safeAsync } from '@st-api/core';
-import { Readable } from 'node:stream';
 import { Logger } from './logger.js';
 
 const logger = Logger.create('expressToHonoAdapter');
@@ -16,25 +15,6 @@ export async function expressToHonoAdapter(
   // Workaround for https://github.com/honojs/hono/issues/1695
   const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
   logger.debug(`url = ${url.toString()}`);
-  // function addQuery(key: string, value: QS[string]) {
-  //   if (value === null || value === undefined) {
-  //     return;
-  //   }
-  //   if (Array.isArray(value)) {
-  //     for (const subValue of value) {
-  //       addQuery(key, subValue);
-  //     }
-  //   } else if (typeof value === 'object') {
-  //
-  //   }
-  // }
-  // for (const [key, value] of Object.entries(req.query)) {
-  //   if (Array.isArray(value)) {
-  //     for (const subValue of value) {
-  //
-  //     }
-  //   }
-  // }
   const headers = new Headers();
   for (const [key, value] of Object.entries(req.headers)) {
     if (value === undefined) {
@@ -63,38 +43,23 @@ export async function expressToHonoAdapter(
     res.setHeader(key, value);
   }
   res.status(fetchResponse.status);
-  if (fetchResponse.body) {
-    const reader = fetchResponse.body.getReader();
-    const stream = new Readable({
-      read() {
-        reader
-          .read()
-          .then(({ done, value }) => {
-            this.push(done ? null : value);
-          })
-          .catch((streamError) => {
-            logger.error('Error on Readable read', streamError);
-            this.destroy(streamError);
-          });
-      },
+  const body = fetchResponse?.body;
+  if (body) {
+    const [errorBody, responseBody] = await safeAsync(async () => {
+      const chunks: Uint8Array[] = [];
+      let length = 0;
+      for await (const chunk of body) {
+        chunks.push(chunk);
+        length += chunk.length;
+      }
+      return Buffer.concat(chunks, length);
     });
-
-    stream.on('error', (streamError) => {
-      logger.error('Stream error', streamError);
-      res.status(500).send('Stream error occurred');
-    });
-
-    req.on('close', () => {
-      logger.log('Client disconnected');
-      reader
-        .cancel()
-        .catch((cancelledError) =>
-          logger.error('Error canceling reader', cancelledError),
-        );
-      stream.destroy();
-    });
-
-    stream.pipe(res);
+    if (errorBody) {
+      logger.error('Failed to parse response body', errorBody);
+      res.status(500).send('Failed to parse response body');
+      return;
+    }
+    res.send(responseBody);
   }
   // End workaround
 }
