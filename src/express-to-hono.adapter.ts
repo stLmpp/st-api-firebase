@@ -1,16 +1,17 @@
 import type { Hono } from 'hono';
-import type { Request } from 'firebase-functions/v2/https';
-import type { Response } from 'express';
+import type { onRequest } from 'firebase-functions/v2/https';
 import { safeAsync } from '@st-api/core';
 import { Readable } from 'node:stream';
 import { Logger } from './logger.js';
 
 const logger = Logger.create('expressToHonoAdapter');
 
+type ReqAndRes = Parameters<Parameters<typeof onRequest>[0]>;
+
 export async function expressToHonoAdapter(
   hono: Hono,
-  req: Request,
-  res: Response,
+  req: ReqAndRes[0],
+  res: ReqAndRes[1],
 ) {
   // Workaround for https://github.com/honojs/hono/issues/1695
   const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
