@@ -1,3 +1,4 @@
+import 'firebase-functions/logger/compat';
 export {
   type CallableHandle,
   type CallableHandler,

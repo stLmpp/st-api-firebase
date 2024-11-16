@@ -40,8 +40,8 @@ importers:
         specifier: ~2.0.2
         version: 2.0.2(@eslint/js@9.15.0)(eslint-plugin-unicorn@56.0.0(eslint@9.15.0))(eslint@9.15.0)(globals@15.11.0)(tsup@8.3.5(@microsoft/api-extractor@7.47.11(@types/node@20.14.8))(@swc/core@1.9.2)(postcss@8.4.49)(typescript@5.6.3)(yaml@2.6.0))(typescript-eslint@8.12.2(eslint@9.15.0)(typescript@5.6.3))(unplugin-swc@1.5.1(@swc/core@1.9.2)(rollup@4.26.0)(webpack-sources@3.2.3))(vitest@2.1.5)
       '@st-api/core':
-        specifier: ~6.0.5
-        version: 6.0.5(@stlmpp/di@0.4.0(reflect-metadata@0.2.2))(reflect-metadata@0.2.2)(zod@3.23.8)
+        specifier: ~6.0.6
+        version: 6.0.6(@stlmpp/di@0.4.0(reflect-metadata@0.2.2))(reflect-metadata@0.2.2)(zod@3.23.8)
       '@stlmpp/di':
         specifier: ~0.4.0
         version: 0.4.0(reflect-metadata@0.2.2)
@@ -1091,8 +1091,8 @@ packages:
       unplugin-swc: ^1.5.1
       vitest: ^2.1.2
 
-  '@st-api/core@6.0.5':
-    resolution: {integrity: sha512-efzSFdFNqZj08MOsquLhLBhEqTFj1ITmFslgkNxt9Puy4LOD2gvPfuM1IypHFfv54edjXAHItjG9Dd//6eUWyA==}
+  '@st-api/core@6.0.6':
+    resolution: {integrity: sha512-0rAwIOiJwSM9Yv3ZLP7vf+hDb4rD0qEkL8Cg4tEupps4hzeIYsGLNPI+pkticcOfNTr2/ve5c6O8DIAuzhjv1A==}
     engines: {node: '20', pnpm: ^9.0.0}
     peerDependencies:
       '@stlmpp/di': ^0.4.0
@@ -4106,7 +4106,7 @@ snapshots:
       unplugin-swc: 1.5.1(@swc/core@1.9.2)(rollup@4.26.0)(webpack-sources@3.2.3)
       vitest: 2.1.5(@types/node@20.14.8)(@vitest/ui@2.1.5)
 
-  '@st-api/core@6.0.5(@stlmpp/di@0.4.0(reflect-metadata@0.2.2))(reflect-metadata@0.2.2)(zod@3.23.8)':
+  '@st-api/core@6.0.6(@stlmpp/di@0.4.0(reflect-metadata@0.2.2))(reflect-metadata@0.2.2)(zod@3.23.8)':
     dependencies:
       '@hono/swagger-ui': 0.4.1(hono@4.6.10)
       '@st-api/zod-openapi': 0.1.0(openapi3-ts@4.4.0)(zod@3.23.8)

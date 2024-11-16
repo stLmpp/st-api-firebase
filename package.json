@@ -1,6 +1,6 @@
 {
   "name": "@st-api/firebase",
-  "version": "6.1.10",
+  "version": "6.1.11",
   "description": "",
   "homepage": "https://github.com/stLmpp/st-api-firebase#readme",
   "bugs": {
@@ -49,7 +49,7 @@
     "@google-cloud/pubsub": "~4.9.0",
     "@microsoft/api-extractor": "~7.47.11",
     "@st-api/config": "~2.0.2",
-    "@st-api/core": "~6.0.5",
+    "@st-api/core": "~6.0.6",
     "@stlmpp/di": "~0.4.0",
     "@swc/core": "~1.9.2",
     "@types/node": "~20.14.8",
