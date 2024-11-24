@@ -1,4 +1,7 @@
-import 'firebase-functions/logger/compat';
+import { isEmulator } from './common/is-emulator.js';
+if (!isEmulator()) {
+  await import('firebase-functions/logger/compat');
+}
 export {
   type CallableHandle,
   type CallableHandler,
@@ -7,7 +10,7 @@ export {
 } from './callable/callable-handler.factory.js';
 export { CallableData } from './callable/callable-data.schema.js';
 export { inject } from './common/inject.js';
-export { isEmulator } from './common/is-emulator.js';
+export { isEmulator };
 export {
   Eventarc,
   type EventarcPublishOptions,
