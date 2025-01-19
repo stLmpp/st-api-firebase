@@ -224,6 +224,8 @@ export class StFirebaseApp {
         }
         return traceId.split('/').at(0);
       },
+      getCorrelationId: this.options.getCorrelationId,
+      getExecutionId: this.options.getExecutionId,
       extraGlobalExceptions: [
         ...(this.options?.extraGlobalExceptions ?? []),
         PUB_SUB_PUBLISH_ERROR,
@@ -231,6 +233,7 @@ export class StFirebaseApp {
         FUNCTION_CALL_UNKNOWN_ERROR,
         FUNCTION_CALL_INVALID_RESPONSE,
       ],
+      cors: this.options.cors,
     });
     return (this.app = app);
   }
