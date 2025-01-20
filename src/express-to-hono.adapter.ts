@@ -50,6 +50,7 @@ export async function expressToHonoAdapter(
   res.status(fetchResponse.status);
 
   if (METHODS_WITHOUT_RESPONSE_BODY.includes(req.method)) {
+    res.end();
     return;
   }
 
