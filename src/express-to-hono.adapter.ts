@@ -8,6 +8,9 @@ const logger = Logger.create('expressToHonoAdapter');
 
 type ReqAndRes = Parameters<Parameters<typeof onRequest>[0]>;
 
+const METHODS_WITHOUT_REQUEST_BODY = ['GET', 'HEAD', 'OPTIONS'];
+const METHODS_WITHOUT_RESPONSE_BODY = ['HEAD', 'OPTIONS'];
+
 export async function expressToHonoAdapter(
   hono: Hono,
   req: ReqAndRes[0],
@@ -26,8 +29,9 @@ export async function expressToHonoAdapter(
   const fetchRequest = new Request(url, {
     method: req.method,
     headers,
-    body:
-      req.method !== 'GET' && req.method !== 'HEAD' ? req.rawBody : undefined,
+    body: !METHODS_WITHOUT_REQUEST_BODY.includes(req.method)
+      ? req.rawBody
+      : undefined,
   });
   const [error, fetchResponse] = await safeAsync(async () =>
     hono.fetch(fetchRequest),
@@ -44,6 +48,11 @@ export async function expressToHonoAdapter(
     res.setHeader(key, value);
   }
   res.status(fetchResponse.status);
+
+  if (METHODS_WITHOUT_RESPONSE_BODY.includes(req.method)) {
+    return;
+  }
+
   if (fetchResponse.body) {
     const reader = fetchResponse.body.getReader();
     const stream = new Readable({
