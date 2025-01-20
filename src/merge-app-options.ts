@@ -41,6 +41,13 @@ export function mergeAppOptions(
     if (option.swaggerDocumentBuilder) {
       swaggerBuilders.push(option.swaggerDocumentBuilder);
     }
+    if (option.cors) {
+      final.cors = {
+        ...final.cors,
+        ...option.cors,
+      };
+    }
+    // TODO merge all options
   }
   final.swaggerDocumentBuilder = (document) =>
     swaggerBuilders.reduce((acc, item) => item(acc), document);
