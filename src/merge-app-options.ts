@@ -2,6 +2,12 @@ import { StFirebaseAppOptions } from './app.type.js';
 import { HonoAppOptions } from '@st-api/core';
 import { Hono } from 'hono';
 
+const AUTO_MERGE_KEYS = [
+  'getTraceId',
+  'getCorrelationId',
+  'getExecutionId',
+] satisfies Array<keyof StFirebaseAppOptions>;
+
 export function mergeAppOptions(
   ...options: StFirebaseAppOptions[]
 ): StFirebaseAppOptions {
@@ -47,7 +53,9 @@ export function mergeAppOptions(
         ...option.cors,
       };
     }
-    // TODO merge all options
+    for (const key of AUTO_MERGE_KEYS) {
+      final[key] = option[key] ?? final[key];
+    }
   }
   final.swaggerDocumentBuilder = (document) =>
     swaggerBuilders.reduce((acc, item) => item(acc), document);
