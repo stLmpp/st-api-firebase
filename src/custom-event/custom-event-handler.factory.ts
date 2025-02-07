@@ -1,5 +1,8 @@
 import { apiStateRunInContext, HonoApp, safeAsync } from '@st-api/core';
-import { CloudFunction as CloudFunctionV1 } from 'firebase-functions/v1';
+import {
+  BlockingFunction,
+  CloudFunction as CloudFunctionV1,
+} from 'firebase-functions/v1';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
 
 import {
@@ -22,9 +25,15 @@ export class CustomEventHandlerFactory {
     name: string,
     callback: (
       context: StFirebaseAppCustomEventContext,
-    ) => CloudFunction<CloudEvent<unknown>> | CloudFunctionV1<any>,
+    ) =>
+      | CloudFunction<CloudEvent<unknown>>
+      | CloudFunctionV1<any>
+      | BlockingFunction,
     options?: CommonHandlerOptions,
-  ): CloudFunction<CloudEvent<unknown>> | CloudFunctionV1<any> {
+  ):
+    | CloudFunction<CloudEvent<unknown>>
+    | CloudFunctionV1<any>
+    | BlockingFunction {
     return callback({
       options: this.options,
       runInContext: async ({ run, state, eventTimestamp, eventData }) => {

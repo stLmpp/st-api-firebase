@@ -1,4 +1,7 @@
-import { CloudFunction as CloudFunctionV1 } from 'firebase-functions/v1';
+import {
+  BlockingFunction,
+  CloudFunction as CloudFunctionV1,
+} from 'firebase-functions/v1';
 import { CloudEvent, CloudFunction } from 'firebase-functions/v2';
 import { HttpsFunction, onRequest } from 'firebase-functions/v2/https';
 import { ZodSchema } from 'zod';
@@ -195,7 +198,10 @@ export class StFirebaseApp {
     name: string,
     callback: (
       context: StFirebaseAppCustomEventContext,
-    ) => CloudFunction<CloudEvent<unknown>> | CloudFunctionV1<any>,
+    ) =>
+      | CloudFunction<CloudEvent<unknown>>
+      | CloudFunctionV1<any>
+      | BlockingFunction,
   ): this {
     const key = this.namingStrategy.custom();
     this.cloudEvents[key] = this.customEventHandlerFactory.create(

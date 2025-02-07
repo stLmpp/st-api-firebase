@@ -1,5 +1,8 @@
 import { ApiState, HonoApp, HonoAppOptions } from '@st-api/core';
-import { CloudFunction as CloudFunctionV1 } from 'firebase-functions/v1';
+import {
+  BlockingFunction,
+  CloudFunction as CloudFunctionV1,
+} from 'firebase-functions/v1';
 import { Expression } from 'firebase-functions/params';
 import {
   CloudEvent,
@@ -15,7 +18,7 @@ import { Hono } from 'hono';
 
 export type StFirebaseAppRecord = Record<
   string,
-  CloudFunction<CloudEvent<unknown>> | CloudFunctionV1<any>
+  CloudFunction<CloudEvent<unknown>> | CloudFunctionV1<any> | BlockingFunction
 >;
 
 export interface StFirebaseAppOptions
