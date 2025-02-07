@@ -10,6 +10,7 @@ import { CloudEventType } from '../cloud-event-type.enum.js';
 import { handleCloudEventError } from '../common/handle-cloud-event-error.js';
 import { APP_SYMBOL } from '../common/inject.js';
 import { Hono } from 'hono';
+import { CommonHandlerOptions } from '../common-handler-options.js';
 
 export class CustomEventHandlerFactory {
   constructor(
@@ -22,6 +23,7 @@ export class CustomEventHandlerFactory {
     callback: (
       context: StFirebaseAppCustomEventContext,
     ) => CloudFunction<CloudEvent<unknown>> | CloudFunctionV1<any>,
+    options?: CommonHandlerOptions,
   ): CloudFunction<CloudEvent<unknown>> | CloudFunctionV1<any> {
     return callback({
       options: this.options,
@@ -40,6 +42,7 @@ export class CustomEventHandlerFactory {
               eventTimestamp,
               data: eventData,
               name,
+              throwError: options?.throwError,
             });
           },
           {

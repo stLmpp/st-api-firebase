@@ -18,6 +18,7 @@ import { RETRY_EVENT_MAX_DIFF, RetryEvent } from '../retry-event.js';
 import { removeCircular } from './remove-circular.js';
 import { Logger } from '../logger.js';
 import { Hono } from 'hono';
+import { CommonHandlerOptions } from '../common-handler-options.js';
 
 export interface HandleCloudEventErrorOptions {
   event?: CloudEvent<unknown>;
@@ -69,10 +70,12 @@ function getContext(
 }
 
 export async function handleCloudEventError(
-  options:
+  options: (
     | HandleCloudEventPubSubErrorOptions
     | HandleCloudEventEventarcErrorOptions
-    | HandleCloudEventCustomErrorOptions,
+    | HandleCloudEventCustomErrorOptions
+  ) &
+    CommonHandlerOptions,
 ): Promise<void> {
   const context = getContext(options);
   if (options.error instanceof RetryEvent) {
@@ -92,6 +95,10 @@ export async function handleCloudEventError(
       errorString: String(unparsedError),
     })}`,
   );
+  if (options.throwError) {
+    Logger.info(`[${context}] throwError option = true, throwing error`);
+    throw unparsedError;
+  }
   const [, traceId] = safe(() => getTraceId());
   const [, correlationId] = safe(() => getCorrelationId());
   const [, executionId] = safe(() => getExecutionId());
