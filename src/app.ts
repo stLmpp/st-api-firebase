@@ -57,6 +57,7 @@ import {
 } from './exceptions.js';
 import { loggerMiddleware } from './logger.middleware.js';
 import { expressToHonoAdapter } from './express-to-hono.adapter.js';
+import { CommonHandlerOptions } from './common-handler-options.js';
 
 export class StFirebaseApp {
   private constructor(options: StFirebaseAppOptions) {
@@ -202,11 +203,13 @@ export class StFirebaseApp {
       | CloudFunction<CloudEvent<unknown>>
       | CloudFunctionV1<any>
       | BlockingFunction,
+    options?: CommonHandlerOptions,
   ): this {
     const key = this.namingStrategy.custom();
     this.cloudEvents[key] = this.customEventHandlerFactory.create(
       name,
       callback,
+      options,
     );
     return this;
   }
