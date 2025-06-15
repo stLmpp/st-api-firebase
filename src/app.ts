@@ -56,8 +56,8 @@ import {
   PUB_SUB_PUBLISH_ERROR,
 } from './exceptions.js';
 import { loggerMiddleware } from './logger.middleware.js';
-import { expressToHonoAdapter } from './express-to-hono.adapter.js';
 import { CommonHandlerOptions } from './common-handler-options.js';
+import { getRequestListener } from '@hono/node-server';
 
 export class StFirebaseApp {
   private constructor(options: StFirebaseAppOptions) {
@@ -131,6 +131,7 @@ export class StFirebaseApp {
   private readonly adapter: StFirebaseAppAdapter;
   private readonly namingStrategy: StFirebaseAppNamingStrategy;
   private app: HonoApp<Hono> | undefined;
+  private requestListener: ReturnType<typeof getRequestListener> | undefined;
   private hasHttpHandler = false;
 
   withHttpHandler(): this {
@@ -156,8 +157,8 @@ export class StFirebaseApp {
         ...options,
       },
       async (req, res) => {
-        const app = await this.getApp();
-        await expressToHonoAdapter(app.hono, req, res);
+        const listener = await this.getRequestListener();
+        return listener(req, res);
       },
     );
   }
@@ -214,6 +215,14 @@ export class StFirebaseApp {
     return this;
   }
 
+  async getRequestListener(): Promise<ReturnType<typeof getRequestListener>> {
+    if (this.requestListener) {
+      return this.requestListener;
+    }
+    const app = await this.getApp();
+    return (this.requestListener = getRequestListener(app.hono.fetch));
+  }
+
   async getApp(): Promise<HonoApp<Hono>> {
     if (this.app) {
       return this.app;
@@ -223,6 +232,27 @@ export class StFirebaseApp {
       hono,
       controllers: this.options.controllers,
       swaggerDocumentBuilder: this.options.swaggerDocumentBuilder,
+      swaggerUIOptions: {
+        ...this.options.swaggerUIOptions,
+        requestInterceptor: `(req) => {
+          const isEmulator = ${isEmulator()};
+          if (!isEmulator) {
+            return req;
+          }
+          if (req.url === '/openapi.json') {
+            req.url = location.pathname.replace(/\\/openapi$/, req.url);
+          }
+          if (req.url.startsWith('http')) {
+            try {
+              const url = new URL(req.url);
+              req.url = location.pathname.replace(/\\/openapi$/, url.pathname);
+            } catch (error) {
+              console.warn('Error trying to parse the req.url', {req}, error);
+            }
+          }
+          return req;
+        }`,
+      },
       providers: this.options.providers,
       getTraceId: (request) => {
         const traceId =

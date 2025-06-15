@@ -12,10 +12,12 @@ import { FirebaseAdminFirestore } from './firebase-admin-firestore.js';
 import { Logger } from '../logger.js';
 import { FactoryProvider, Provider } from '@stlmpp/di';
 import { Class } from 'type-fest';
+import { FirebaseAdminStorage } from './firebase-admin-storage.js';
+import { getStorage } from 'firebase-admin/storage';
 
 export function provideFirebaseAdmin(): Array<Provider | Class<any>> {
   return [
-    { provide: FirebaseAdminApp, useFactory: () => initializeApp() },
+    new FactoryProvider(FirebaseAdminApp, () => initializeApp()),
     new FactoryProvider(FirebaseAdminAuth, (app) => getAuth(app), [
       FirebaseAdminApp,
     ]),
@@ -37,5 +39,8 @@ export function provideFirebaseAdmin(): Array<Provider | Class<any>> {
       FirebaseAdminApp,
     ]),
     Eventarc,
+    new FactoryProvider(FirebaseAdminStorage, (app) => getStorage(app), [
+      FirebaseAdminApp,
+    ]),
   ];
 }
