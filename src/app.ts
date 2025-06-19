@@ -245,7 +245,7 @@ export class StFirebaseApp {
           if (req.url.startsWith('http')) {
             try {
               const url = new URL(req.url);
-              req.url = location.pathname.replace(/\\/openapi$/, url.pathname);
+              req.url = location.pathname.replace(/\\/openapi$/, url.pathname) + url.search + url.hash;
             } catch (error) {
               console.warn('Error trying to parse the req.url', {req}, error);
             }
