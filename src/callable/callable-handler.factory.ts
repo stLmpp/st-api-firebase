@@ -68,7 +68,10 @@ export type CallableHandlerOptions<
   schema: () =>
     | Promise<CallableHandlerSchema<RequestSchema, ResponseSchema>>
     | CallableHandlerSchema<RequestSchema, ResponseSchema>;
-} & Pick<CallableOptions, 'preserveExternalChanges' | 'region'> &
+} & Pick<
+  CallableOptions,
+  'preserveExternalChanges' | 'region' | 'timeoutSeconds'
+> &
   CallableHandlers<RequestSchema, ResponseSchema>;
 
 export class CallableHandlerFactory {
@@ -84,102 +87,91 @@ export class CallableHandlerFactory {
     let schema:
       | CallableHandlerSchema<RequestSchema, ResponseSchema>
       | undefined;
+    options = { ...this.options, ...options };
     let handler: CallableHandle<RequestSchema, ResponseSchema>;
     const getSchema = async () => (schema ??= await options.schema());
     const getHandle = async (app: HonoApp<Hono>) =>
       (handler ??= await this.getHandle(options, app));
-    return onCall(
-      {
-        ...this.options,
-        preserveExternalChanges:
-          options.preserveExternalChanges ??
-          this.options.preserveExternalChanges,
-      },
-      async (request) => {
-        const app = await this.getApp();
-        const callableValidation = CallableData.safeParse(request.data);
-        const callableData = callableValidation.success
-          ? callableValidation.data
-          : undefined;
-        const correlationId =
-          callableData?.correlationId ?? createCorrelationId();
-        const traceId = callableData?.traceId ?? createCorrelationId();
-        const [error, result] = await safeAsync(() =>
-          apiStateRunInContext(
-            async () => {
-              Logger.debug(
-                `[Callable - ${options.name}] Request received (before middleware)`,
-                { request: { data: request.data, auth: request.auth } },
+    return onCall(options, async (request) => {
+      const app = await this.getApp();
+      const callableValidation = CallableData.safeParse(request.data);
+      const callableData = callableValidation.success
+        ? callableValidation.data
+        : undefined;
+      const correlationId =
+        callableData?.correlationId ?? createCorrelationId();
+      const traceId = callableData?.traceId ?? createCorrelationId();
+      const [error, result] = await safeAsync(() =>
+        apiStateRunInContext(
+          async () => {
+            Logger.debug(
+              `[Callable - ${options.name}] Request received (before middleware)`,
+              { request: { data: request.data, auth: request.auth } },
+            );
+            request = await this.middleware(request);
+            Logger.debug(
+              `[Callable - ${options.name}] Request received (after middleware)`,
+              { request: { data: request.data, auth: request.auth } },
+            );
+            if (!callableValidation.success) {
+              throw CALLABLE_BAD_FORMAT(
+                formatZodErrorString(callableValidation.error),
               );
-              request = await this.middleware(request);
-              Logger.debug(
-                `[Callable - ${options.name}] Request received (after middleware)`,
-                { request: { data: request.data, auth: request.auth } },
+            }
+            const { request: requestSchema, response: responseSchema } =
+              await getSchema();
+            const requestValidation = await requestSchema.safeParseAsync(
+              callableValidation.data.body,
+            );
+            if (!requestValidation.success) {
+              throw CALLABLE_BAD_REQUEST(
+                formatZodErrorString(requestValidation.error),
               );
-              if (!callableValidation.success) {
-                throw CALLABLE_BAD_FORMAT(
-                  formatZodErrorString(callableValidation.error),
-                );
-              }
-              const { request: requestSchema, response: responseSchema } =
-                await getSchema();
-              const requestValidation = await requestSchema.safeParseAsync(
-                callableValidation.data.body,
+            }
+            const handle = await getHandle(app);
+            request.data = requestValidation.data;
+            const response = await handle(request);
+            const responseValidation =
+              await responseSchema.safeParseAsync(response);
+            if (!responseValidation.success) {
+              throw CALLABLE_BAD_RESPONSE(
+                formatZodErrorString(responseValidation.error),
               );
-              if (!requestValidation.success) {
-                throw CALLABLE_BAD_REQUEST(
-                  formatZodErrorString(requestValidation.error),
-                );
-              }
-              const handle = await getHandle(app);
-              request.data = requestValidation.data;
-              const response = await handle(request);
-              const responseValidation =
-                await responseSchema.safeParseAsync(response);
-              if (!responseValidation.success) {
-                throw CALLABLE_BAD_RESPONSE(
-                  formatZodErrorString(responseValidation.error),
-                );
-              }
-              return responseValidation.data;
+            }
+            return responseValidation.data;
+          },
+          {
+            metadata: {
+              [APP_SYMBOL]: app,
             },
-            {
-              metadata: {
-                [APP_SYMBOL]: app,
-              },
-              traceId,
-              correlationId,
-            },
-          ),
-        );
-        if (!error) {
-          return result;
-        }
-        const stringError = JSON.stringify({
-          error: removeCircular(error),
-          errorString: String(error),
-        });
-        if (error instanceof Exception) {
-          Logger.info(
-            `[Callable ${options.name}] known error = ${stringError}`,
-          );
-          throw new HttpsError(
-            getHttpsErrorFromStatus(error.getStatus()),
-            error.message,
-            error.toJSON(),
-          );
-        }
-        Logger.error(
-          `[Callable ${options.name}] unknown error = ${stringError}`,
-        );
-        const unknownError = CALLABLE_UNKNOWN_ERROR(stringError);
+            traceId,
+            correlationId,
+          },
+        ),
+      );
+      if (!error) {
+        return result;
+      }
+      const stringError = JSON.stringify({
+        error: removeCircular(error),
+        errorString: String(error),
+      });
+      if (error instanceof Exception) {
+        Logger.info(`[Callable ${options.name}] known error = ${stringError}`);
         throw new HttpsError(
-          getHttpsErrorFromStatus(unknownError.getStatus()),
-          unknownError.message,
-          unknownError.toJSON(),
+          getHttpsErrorFromStatus(error.getStatus()),
+          error.message,
+          error.toJSON(),
         );
-      },
-    );
+      }
+      Logger.error(`[Callable ${options.name}] unknown error = ${stringError}`);
+      const unknownError = CALLABLE_UNKNOWN_ERROR(stringError);
+      throw new HttpsError(
+        getHttpsErrorFromStatus(unknownError.getStatus()),
+        unknownError.message,
+        unknownError.toJSON(),
+      );
+    });
   }
 
   private async getHandle<

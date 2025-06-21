@@ -59,6 +59,7 @@ export type PubSubHandlerOptions<
   | 'eventFilterPathPatterns'
   | 'eventFilters'
   | 'region'
+  | 'timeoutSeconds'
 > &
   PubSubHandlers<Schema>;
 
@@ -97,6 +98,7 @@ export class PubSubHandlerFactory {
         eventFilterPathPatterns: options.eventFilterPathPatterns,
         eventFilters: options.eventFilterPathPatterns,
         region: options.region ?? this.options.region,
+        timeoutSeconds: options.timeoutSeconds ?? this.options.timeoutSeconds,
       },
       async (event) => {
         const app = await this.getApp();

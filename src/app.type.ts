@@ -33,11 +33,13 @@ export interface StFirebaseAppHandlerOptions {
   preserveExternalChanges?: boolean;
   retry?: boolean;
   region?: SupportedRegion;
+  timeoutSeconds?: number;
 }
 
 export interface StFirebaseAppHttpOptions {
   preserveExternalChanges?: boolean;
   region?: SupportedRegion;
+  timeoutSeconds?: number;
 }
 
 export interface StFirebaseAppOptionsExtended

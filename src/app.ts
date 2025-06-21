@@ -71,7 +71,8 @@ export class StFirebaseApp {
       preserveExternalChanges: true,
       ...newOptions,
       ...newOptions.handlerOptions,
-      timeoutSeconds: TIMEOUT_SECONDS,
+      timeoutSeconds:
+        newOptions.handlerOptions?.timeoutSeconds ?? TIMEOUT_SECONDS,
       concurrency: CONCURRENCY,
       cpu: USE_GEN1_CPU.value() ? 'gcf_gen1' : undefined,
       maxInstances: MAX_INSTANCES,

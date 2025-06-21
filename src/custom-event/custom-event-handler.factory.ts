@@ -29,13 +29,13 @@ export class CustomEventHandlerFactory {
       | CloudFunction<CloudEvent<unknown>>
       | CloudFunctionV1<any>
       | BlockingFunction,
-    options?: CommonHandlerOptions,
+    { throwError, ...options }: CommonHandlerOptions = {},
   ):
     | CloudFunction<CloudEvent<unknown>>
     | CloudFunctionV1<any>
     | BlockingFunction {
     return callback({
-      options: this.options,
+      options: { ...this.options, ...options },
       runInContext: async ({ run, state, eventTimestamp, eventData }) => {
         const app = await this.getApp();
         await apiStateRunInContext(
@@ -51,7 +51,7 @@ export class CustomEventHandlerFactory {
               eventTimestamp,
               data: eventData,
               name,
-              throwError: options?.throwError,
+              throwError,
             });
           },
           {

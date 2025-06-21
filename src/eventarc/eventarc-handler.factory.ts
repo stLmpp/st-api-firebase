@@ -51,6 +51,7 @@ export type EventarcHandlerOptions<
   | 'retry'
   | 'preserveExternalChanges'
   | 'region'
+  | 'timeoutSeconds'
 > &
   EventarcHandlers<Schema>;
 
@@ -94,6 +95,7 @@ export class EventarcHandlerFactory {
           this.options.preserveExternalChanges,
         retry: options.retry ?? this.options.retry,
         region: options.region ?? this.options.region,
+        timeoutSeconds: options.timeoutSeconds ?? this.options.timeoutSeconds,
       },
       async (event) => {
         const app = await this.getApp();
