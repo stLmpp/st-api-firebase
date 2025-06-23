@@ -88,18 +88,7 @@ export class PubSubHandlerFactory {
     let handle: PubSubHandle<Schema>;
     const getSchema = async () => (schema ??= await options.schema());
     return onMessagePublished(
-      {
-        ...this.options,
-        topic: options.topic,
-        retry: options.retry ?? this.options.retry,
-        preserveExternalChanges:
-          options.preserveExternalChanges ??
-          this.options.preserveExternalChanges,
-        eventFilterPathPatterns: options.eventFilterPathPatterns,
-        eventFilters: options.eventFilterPathPatterns,
-        region: options.region ?? this.options.region,
-        timeoutSeconds: options.timeoutSeconds ?? this.options.timeoutSeconds,
-      },
+      { ...this.options, ...options },
       async (event) => {
         const app = await this.getApp();
         const getHandle = async () =>

@@ -1,10 +1,11 @@
 import { getStateMetadataKey, HonoApp } from '@st-api/core';
 import { Class } from 'type-fest';
 import { Hono } from 'hono';
+import { InjectionToken } from '@stlmpp/di';
 
 export const APP_SYMBOL = Symbol('APP_SYMBOL');
 
-export function inject<T>(type: Class<T>): T {
+export function inject<T>(type: Class<T> | InjectionToken<T>): T {
   const app = getStateMetadataKey(APP_SYMBOL) as HonoApp<Hono> | undefined;
   if (!app) {
     throw new Error('App is not running on context');
