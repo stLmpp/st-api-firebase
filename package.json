@@ -1,6 +1,6 @@
 {
   "name": "@st-api/firebase",
-  "version": "6.5.7",
+  "version": "6.5.8",
   "description": "",
   "homepage": "https://github.com/stLmpp/st-api-firebase#readme",
   "bugs": {
@@ -63,6 +63,7 @@
     "reflect-metadata": "~0.2.2",
     "tsup": "~8.5.0",
     "typescript": "~5.8.3",
+    "typescript-eslint": "~8.35.0",
     "unplugin-swc": "~1.5.4",
     "vitest": "~3.2.3",
     "vitest-mock-extended": "~3.1.0",
@@ -70,6 +71,7 @@
   },
   "peerDependencies": {
     "@google-cloud/pubsub": "^5.1.0",
+    "@google-cloud/storage": "^7.14.0",
     "@st-api/core": "^6.2.3",
     "@stlmpp/di": "^0.4.0",
     "firebase": "^11.9.0",
